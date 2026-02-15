@@ -21,13 +21,13 @@ export class Table {
     c.width = w; c.height = h;
     const ctx = c.getContext('2d');
 
-    // Rich dark wood base
+    // Rich wood base - bright enough to be visible
     const grad = ctx.createLinearGradient(0, 0, w, 0);
-    grad.addColorStop(0, '#3a1e0a');
-    grad.addColorStop(0.3, '#4a2810');
-    grad.addColorStop(0.5, '#3d2008');
-    grad.addColorStop(0.7, '#4e2c12');
-    grad.addColorStop(1, '#3a1e0a');
+    grad.addColorStop(0, '#6b3a1a');
+    grad.addColorStop(0.25, '#7a4522');
+    grad.addColorStop(0.5, '#6d3818');
+    grad.addColorStop(0.75, '#7e4825');
+    grad.addColorStop(1, '#6b3a1a');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, w, h);
 
@@ -36,7 +36,7 @@ export class Table {
       const y = Math.random() * h;
       const thickness = 0.5 + Math.random() * 2;
       const alpha = 0.04 + Math.random() * 0.08;
-      ctx.strokeStyle = `rgba(${80 + Math.random() * 50},${40 + Math.random() * 30},${10 + Math.random() * 20},${alpha})`;
+      ctx.strokeStyle = `rgba(${100 + Math.random() * 60},${55 + Math.random() * 40},${20 + Math.random() * 25},${alpha})`;
       ctx.lineWidth = thickness;
       ctx.beginPath();
       ctx.moveTo(0, y);
@@ -52,19 +52,19 @@ export class Table {
       const ky = Math.random() * h;
       const kr = 5 + Math.random() * 10;
       const kgrad = ctx.createRadialGradient(kx, ky, 0, kx, ky, kr);
-      kgrad.addColorStop(0, 'rgba(30,12,4,0.3)');
-      kgrad.addColorStop(1, 'rgba(60,30,10,0)');
+      kgrad.addColorStop(0, 'rgba(50,25,10,0.4)');
+      kgrad.addColorStop(1, 'rgba(80,40,15,0)');
       ctx.fillStyle = kgrad;
       ctx.beginPath();
       ctx.arc(kx, ky, kr, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    // Subtle glossy sheen
+    // Glossy sheen for polish
     const sheen = ctx.createLinearGradient(0, 0, w, h);
-    sheen.addColorStop(0, 'rgba(255,220,180,0.03)');
-    sheen.addColorStop(0.5, 'rgba(255,220,180,0.06)');
-    sheen.addColorStop(1, 'rgba(255,220,180,0.02)');
+    sheen.addColorStop(0, 'rgba(255,220,180,0.08)');
+    sheen.addColorStop(0.5, 'rgba(255,230,190,0.12)');
+    sheen.addColorStop(1, 'rgba(255,220,180,0.06)');
     ctx.fillStyle = sheen;
     ctx.fillRect(0, 0, w, h);
 
@@ -106,9 +106,9 @@ export class Table {
 
     const mat = new THREE.MeshStandardMaterial({
       map: woodTex,
-      color: 0x8a5a30,
-      roughness: 0.4,
-      metalness: 0.08,
+      color: 0xffffff,
+      roughness: 0.45,
+      metalness: 0.05,
     });
 
     const tableTop = new THREE.Mesh(geo, mat);

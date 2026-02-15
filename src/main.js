@@ -505,7 +505,8 @@ function startSinglePlayer() {
   gameMode = 'single';
   showScreen('game-hud');
   document.getElementById('chat-box').style.display = 'none';
-  document.getElementById('abilities-bar').style.display = 'flex'; // abilities enabled in SP too
+  document.getElementById('abilities-bar').style.display = 'flex';
+  buildAbilitiesGrid();
   document.getElementById('room-code-hud').style.display = 'none';
   document.getElementById('hud-player-name').textContent = 'TÚ';
   document.getElementById('streak-counter').style.display = 'block';
@@ -942,27 +943,59 @@ async function triggerRussianRoulette(targetIsSelf) {
 }
 
 // ===== ABILITIES UI =====
+function buildAbilitiesGrid() {
+  const grid = document.getElementById('abilities-grid');
+  if (!grid || !gameManager) return;
+  grid.innerHTML = '';
+  const abilities = gameManager.abilities;
+  for (const [id, ab] of Object.entries(abilities)) {
+    const btn = document.createElement('button');
+    btn.className = 'ability-btn';
+    btn.dataset.ability = id;
+    btn.title = `${ab.name}: ${ab.desc} ($${ab.cost})`;
+    btn.innerHTML = `
+      <div class="ability-icon-wrap">${ab.icon}</div>
+      <span class="ability-name">${ab.name}</span>
+      <span class="ability-cost">${ab.cost > 0 ? '$' + ab.cost : 'GRATIS'}</span>
+      <div class="ability-cd" id="cd-${id}"></div>
+      <div class="ability-tooltip">${ab.desc}<br>Costo: $${ab.cost} | CD: ${ab.cooldown}r</div>
+    `;
+    grid.appendChild(btn);
+  }
+}
+
 function setupAbilitiesUI() {
-  document.querySelectorAll('.ability-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+  // Toggle button
+  const toggle = document.getElementById('abilities-toggle');
+  const grid = document.getElementById('abilities-grid');
+  if (toggle && grid) {
+    toggle.addEventListener('click', () => {
+      grid.classList.toggle('collapsed');
+      toggle.textContent = grid.classList.contains('collapsed') ? 'HABILIDADES ▶' : 'HABILIDADES ▼';
+    });
+  }
+
+  // Delegate clicks on ability buttons
+  if (grid) {
+    grid.addEventListener('click', (e) => {
+      const btn = e.target.closest('.ability-btn');
+      if (!btn) return;
       const abilityId = btn.dataset.ability;
       audioManager.playSound('click');
 
       if (gameMode === 'single') {
-        // Single-player: use GameManager abilities
         const result = gameManager.useAbility(abilityId);
         if (!result.success) {
           showMessage(result.message);
         } else {
           showAbilityEffect(`¡${gameManager.abilities[abilityId].name} activado!`);
-          // Update cooldowns display
           updateAbilityCooldowns(gameManager.getAbilityCooldowns());
         }
       } else if (gameMode === 'multi' && mpClient) {
         mpClient.useAbility(abilityId);
       }
     });
-  });
+  }
 }
 
 function updateAbilityCooldowns(cooldowns) {
@@ -971,9 +1004,8 @@ function updateAbilityCooldowns(cooldowns) {
     const cd = cooldowns[id] || 0;
     btn.disabled = cd > 0;
     btn.classList.toggle('on-cooldown', cd > 0);
-    if (cd > 0) {
-      btn.title = `Cooldown: ${cd} rondas`;
-    }
+    const cdEl = btn.querySelector('.ability-cd');
+    if (cdEl) cdEl.textContent = cd > 0 ? cd : '';
   });
 }
 
@@ -1105,24 +1137,31 @@ function initShopPreview() {
 }
 
 function renderShopPreview() {
-  if (!shopPreviewRenderer) return;
+  if (!shopPreviewRenderer || !shopPreviewScene || !shopPreviewCamera) return;
   if (shopPreviewMesh) {
     shopPreviewMesh.rotation.y += 0.012;
   }
   shopPreviewRenderer.render(shopPreviewScene, shopPreviewCamera);
-  if (document.getElementById('shop-overlay') && !document.getElementById('shop-overlay').classList.contains('hidden')) {
+  const overlay = document.getElementById('shop-overlay');
+  if (overlay && !overlay.classList.contains('hidden')) {
     shopPreviewAnim = requestAnimationFrame(renderShopPreview);
+  } else {
+    shopPreviewAnim = null;
   }
 }
 
 function clearShopPreview() {
-  if (shopPreviewMesh) {
+  if (shopPreviewMesh && shopPreviewScene) {
     shopPreviewScene.remove(shopPreviewMesh);
     shopPreviewMesh.traverse(c => {
       if (c.geometry) c.geometry.dispose();
       if (c.material) {
-        if (c.material.map) c.material.map.dispose();
-        c.material.dispose();
+        if (Array.isArray(c.material)) {
+          c.material.forEach(m => { if (m.map) m.map.dispose(); m.dispose(); });
+        } else {
+          if (c.material.map) c.material.map.dispose();
+          c.material.dispose();
+        }
       }
     });
     shopPreviewMesh = null;
@@ -1164,31 +1203,48 @@ function buildPreviewObject(itemId) {
     mesh.rotation.x = -0.3;
     group.add(mesh);
   } else if (cat === 'table') {
-    // Show a mini felt oval
+    // Show a mini poker table
     const feltColors = { red: 0xaa1122, blue: 0x1144aa, black: 0x222222 };
-    const shape = new THREE.Shape();
+
+    // Wood base (extruded ellipse)
+    const baseShape = new THREE.Shape();
     for (let i = 0; i <= 64; i++) {
       const a = (i / 64) * Math.PI * 2;
-      const x = Math.cos(a) * 0.7; const y = Math.sin(a) * 0.4;
-      if (i === 0) shape.moveTo(x, y); else shape.lineTo(x, y);
+      if (i === 0) baseShape.moveTo(Math.cos(a) * 0.7, Math.sin(a) * 0.4);
+      else baseShape.lineTo(Math.cos(a) * 0.7, Math.sin(a) * 0.4);
     }
-    const geo = new THREE.ShapeGeometry(shape);
-    const mat = new THREE.MeshStandardMaterial({ color: feltColors[variant] || 0x1a8a40, roughness: 0.9 });
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.rotation.x = -Math.PI / 3;
-    mesh.position.y = -0.1;
-    group.add(mesh);
-    // Rail
-    const curve = new THREE.EllipseCurve(0, 0, 0.75, 0.45, 0, Math.PI * 2);
-    const pts = curve.getPoints(64);
-    const path = new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(p.x, 0, p.y)));
-    path.closed = true;
-    const railGeo = new THREE.TubeGeometry(path, 64, 0.03, 8, true);
-    const railMat = new THREE.MeshStandardMaterial({ color: 0x3a1810, roughness: 0.6 });
-    const rail = new THREE.Mesh(railGeo, railMat);
-    rail.rotation.x = -Math.PI / 3;
-    rail.position.y = -0.1;
-    group.add(rail);
+    const baseGeo = new THREE.ExtrudeGeometry(baseShape, { depth: 0.04, bevelEnabled: true, bevelThickness: 0.01, bevelSize: 0.01, bevelSegments: 2 });
+    const baseMat = new THREE.MeshStandardMaterial({ color: 0x6b3a1a, roughness: 0.5 });
+    const baseMesh = new THREE.Mesh(baseGeo, baseMat);
+    baseMesh.rotation.x = -Math.PI / 2;
+    baseMesh.position.y = -0.02;
+    group.add(baseMesh);
+
+    // Felt surface on top
+    const feltShape = new THREE.Shape();
+    for (let i = 0; i <= 64; i++) {
+      const a = (i / 64) * Math.PI * 2;
+      if (i === 0) feltShape.moveTo(Math.cos(a) * 0.6, Math.sin(a) * 0.32);
+      else feltShape.lineTo(Math.cos(a) * 0.6, Math.sin(a) * 0.32);
+    }
+    const feltGeo = new THREE.ShapeGeometry(feltShape);
+    const feltMat = new THREE.MeshStandardMaterial({ color: feltColors[variant] || 0x1a8a40, roughness: 0.9 });
+    const feltMesh = new THREE.Mesh(feltGeo, feltMat);
+    feltMesh.rotation.x = -Math.PI / 2;
+    feltMesh.position.y = 0.025;
+    group.add(feltMesh);
+
+    // Rail (torus-like ring around edge)
+    const railPoints = [];
+    for (let i = 0; i <= 64; i++) {
+      const a = (i / 64) * Math.PI * 2;
+      railPoints.push(new THREE.Vector3(Math.cos(a) * 0.72, 0.02, Math.sin(a) * 0.42));
+    }
+    const railPath = new THREE.CatmullRomCurve3(railPoints, true);
+    const railGeo = new THREE.TubeGeometry(railPath, 64, 0.025, 8, true);
+    const railMat = new THREE.MeshStandardMaterial({ color: 0x3a1810, roughness: 0.6, metalness: 0.1 });
+    const railMesh = new THREE.Mesh(railGeo, railMat);
+    group.add(railMesh);
   } else if (cat === 'emote') {
     // Show emoji on a floating card
     const emojis = { fire: '\u{1F525}', skull: '\u{1F480}', crown: '\u{1F451}' };

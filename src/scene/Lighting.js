@@ -9,11 +9,11 @@ export class Lighting {
 
   setup() {
     // Strong ambient for visibility
-    const ambient = new THREE.AmbientLight(0x554466, 1.2);
+    const ambient = new THREE.AmbientLight(0x665577, 1.8);
     this.scene.add(ambient);
 
     // Hemisphere - warm sky, cool ground
-    const hemi = new THREE.HemisphereLight(0x887799, 0x443355, 1.0);
+    const hemi = new THREE.HemisphereLight(0x998899, 0x554466, 1.4);
     this.scene.add(hemi);
 
     // Neon pink accent light - left
@@ -37,28 +37,45 @@ export class Lighting {
     this.lights.push({ light: purpleLight, baseIntensity: 2.0, phase: 3.0 });
 
     // Warm fill behind player
-    const warmBack = new THREE.PointLight(0xffaa66, 1.2, 10);
-    warmBack.position.set(0, 2, 4);
+    const warmBack = new THREE.PointLight(0xffaa66, 1.8, 12);
+    warmBack.position.set(0, 2.5, 4);
     this.scene.add(warmBack);
 
     // Warm under-table glow
-    const warmGlow = new THREE.PointLight(0xffaa55, 0.8, 5);
+    const warmGlow = new THREE.PointLight(0xffaa55, 1.2, 6);
     warmGlow.position.set(0, 0.3, 0);
     this.scene.add(warmGlow);
 
     // Extra side fills for depth
-    const leftFill = new THREE.PointLight(0xff66aa, 0.8, 8);
+    const leftFill = new THREE.PointLight(0xff66aa, 1.2, 10);
     leftFill.position.set(-5, 1.5, 1);
     this.scene.add(leftFill);
 
-    const rightFill = new THREE.PointLight(0x6688ff, 0.8, 8);
+    const rightFill = new THREE.PointLight(0x6688ff, 1.2, 10);
     rightFill.position.set(5, 1.5, 1);
     this.scene.add(rightFill);
 
     // Ceiling bounce light for overall brightness
-    const ceilingBounce = new THREE.PointLight(0xffddcc, 0.6, 12);
+    const ceilingBounce = new THREE.PointLight(0xffddcc, 1.4, 16);
     ceilingBounce.position.set(0, 3.8, 0);
     this.scene.add(ceilingBounce);
+
+    // Extra corner fills to illuminate dark areas
+    const cornerFL = new THREE.PointLight(0xffccaa, 0.8, 8);
+    cornerFL.position.set(-5, 2, 4);
+    this.scene.add(cornerFL);
+
+    const cornerFR = new THREE.PointLight(0xffccaa, 0.8, 8);
+    cornerFR.position.set(5, 2, 4);
+    this.scene.add(cornerFR);
+
+    const cornerBL = new THREE.PointLight(0xaabbff, 0.6, 8);
+    cornerBL.position.set(-5, 2, -4);
+    this.scene.add(cornerBL);
+
+    const cornerBR = new THREE.PointLight(0xaabbff, 0.6, 8);
+    cornerBR.position.set(5, 2, -4);
+    this.scene.add(cornerBR);
   }
 
   update(time) {

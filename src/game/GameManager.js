@@ -45,11 +45,31 @@ export class GameManager {
 
     // Abilities system (single-player)
     this.abilities = {
-      peek: { id: 'peek', name: 'Visión', cost: 100, cooldown: 3 },
-      shield: { id: 'shield', name: 'Escudo', cost: 150, cooldown: 5 },
-      intimidate: { id: 'intimidate', name: 'Intimidar', cost: 75, cooldown: 2 },
-      swap: { id: 'swap', name: 'Cambio', cost: 200, cooldown: 4 },
-      doubledown: { id: 'doubledown', name: 'Doble o Nada', cost: 0, cooldown: 6 },
+      peek: { id: 'peek', name: 'Visión', cost: 100, cooldown: 3, icon: '👁', desc: 'Ve la próxima carta comunitaria' },
+      shield: { id: 'shield', name: 'Escudo', cost: 150, cooldown: 5, icon: '🛡', desc: 'Protege tu apuesta si pierdes' },
+      intimidate: { id: 'intimidate', name: 'Intimidar', cost: 75, cooldown: 2, icon: '👻', desc: 'Revela palo de carta rival' },
+      swap: { id: 'swap', name: 'Cambio', cost: 200, cooldown: 4, icon: '🔄', desc: 'Cambia una carta de tu mano' },
+      doubledown: { id: 'doubledown', name: 'Doble o Nada', cost: 0, cooldown: 6, icon: '⚔', desc: 'Duplica el pozo si ganas' },
+      xray: { id: 'xray', name: 'Rayos X', cost: 250, cooldown: 5, icon: '🔍', desc: 'Ve una carta de un rival' },
+      freeze: { id: 'freeze', name: 'Congelar', cost: 120, cooldown: 3, icon: '❄', desc: 'Impide que un bot suba' },
+      luck: { id: 'luck', name: 'Suerte', cost: 80, cooldown: 4, icon: '🍀', desc: '+15% probabilidad favorable' },
+      steal: { id: 'steal', name: 'Robar', cost: 300, cooldown: 6, icon: '💰', desc: 'Roba 10% fichas de un rival' },
+      mirror: { id: 'mirror', name: 'Espejo', cost: 180, cooldown: 4, icon: '🪞', desc: 'Copia la última acción rival' },
+      smoke: { id: 'smoke', name: 'Humo', cost: 60, cooldown: 2, icon: '💨', desc: 'Oculta tu apuesta por 1 turno' },
+      rage: { id: 'rage', name: 'Furia', cost: 100, cooldown: 3, icon: '🔥', desc: 'Min raise +50% por 1 ronda' },
+      calm: { id: 'calm', name: 'Calma', cost: 90, cooldown: 3, icon: '🧘', desc: 'Reduce la apuesta mín. 50%' },
+      bluff: { id: 'bluff', name: 'Farol', cost: 50, cooldown: 2, icon: '🎭', desc: 'Muestra cartas falsas a bots' },
+      reload: { id: 'reload', name: 'Recarga', cost: 0, cooldown: 8, icon: '🔋', desc: 'Resetea cooldown de 1 habilidad' },
+      oracle: { id: 'oracle', name: 'Oráculo', cost: 350, cooldown: 7, icon: '🔮', desc: 'Ve las 2 próximas comunitarias' },
+      sabotage: { id: 'sabotage', name: 'Sabotaje', cost: 200, cooldown: 5, icon: '💣', desc: 'Un bot random foldea' },
+      revival: { id: 'revival', name: 'Revivir', cost: 400, cooldown: 10, icon: '💎', desc: 'Si pierdes, recuperas 50% apuesta' },
+      tax: { id: 'tax', name: 'Impuesto', cost: 150, cooldown: 4, icon: '📜', desc: 'Cada bot paga 5% al pozo' },
+      insight: { id: 'insight', name: 'Intuición', cost: 130, cooldown: 3, icon: '🧠', desc: 'Ve la fuerza de mano de un bot' },
+      wildcard: { id: 'wildcard', name: 'Comodín', cost: 500, cooldown: 8, icon: '🃏', desc: 'Tu carta se vuelve comodín' },
+      phantom: { id: 'phantom', name: 'Fantasma', cost: 160, cooldown: 4, icon: '👤', desc: 'Tu siguiente fold no pierde apuesta' },
+      jackpot: { id: 'jackpot', name: 'Jackpot', cost: 0, cooldown: 12, icon: '🎰', desc: 'Chance de ganar x3 el pozo' },
+      aura: { id: 'aura', name: 'Aura', cost: 200, cooldown: 5, icon: '✨', desc: 'Bots más propensos a foldear' },
+      counter: { id: 'counter', name: 'Contra', cost: 100, cooldown: 3, icon: '⚡', desc: 'Bloquea la próxima habilidad rival' },
     };
     this.abilityCooldowns = {}; // abilityId -> roundsLeft
     this.playerShielded = false;
@@ -520,6 +540,141 @@ export class GameManager {
       case 'doubledown':
         this.playerDoubleDown = true;
         this.emitMessage('⚔ ¡DOBLE O NADA ACTIVADO!');
+        break;
+      case 'xray': {
+        const bots2 = this.players.filter(p => p.isBot && !p.folded && p.holeCards.length > 0);
+        if (bots2.length > 0) {
+          const t = bots2[Math.floor(Math.random() * bots2.length)];
+          const c = t.holeCards[0];
+          if (this.onAbilityResult) this.onAbilityResult({ ability: 'xray', targetName: t.name, card: c });
+        }
+        this.emitMessage('🔍 Rayos X activado');
+        break;
+      }
+      case 'freeze': {
+        const bots3 = this.players.filter(p => p.isBot && !p.folded);
+        if (bots3.length > 0) {
+          const t = bots3[Math.floor(Math.random() * bots3.length)];
+          t._frozen = true;
+          this.emitMessage(`❄ ${t.name} congelado - no puede subir`);
+        }
+        break;
+      }
+      case 'luck':
+        player._luckyRound = true;
+        this.emitMessage('🍀 ¡Suerte activada!');
+        break;
+      case 'steal': {
+        const bots4 = this.players.filter(p => p.isBot && !p.folded && p.chips > 0);
+        if (bots4.length > 0) {
+          const t = bots4[Math.floor(Math.random() * bots4.length)];
+          const amount = Math.floor(t.chips * 0.1);
+          t.chips -= amount;
+          player.chips += amount;
+          this.emitMessage(`💰 Robaste $${amount} a ${t.name}`);
+        }
+        break;
+      }
+      case 'mirror':
+        player._mirrorActive = true;
+        this.emitMessage('🪞 Espejo activo - copiarás la próxima acción');
+        break;
+      case 'smoke':
+        player._smokeScreen = true;
+        this.emitMessage('💨 Humo desplegado');
+        break;
+      case 'rage':
+        this.minRaise = Math.floor(this.minRaise * 1.5);
+        this.emitMessage('🔥 ¡Furia! Min raise +50%');
+        break;
+      case 'calm':
+        this.minRaise = Math.max(this.bigBlind, Math.floor(this.minRaise * 0.5));
+        this.emitMessage('🧘 Calma. Min raise -50%');
+        break;
+      case 'bluff':
+        this.emitMessage('🎭 Farol activado - bots confundidos');
+        this.players.filter(p => p.isBot && !p.folded).forEach(b => { b._confused = true; });
+        break;
+      case 'reload': {
+        let best = null, bestCd = 0;
+        for (const [k, v] of Object.entries(this.abilityCooldowns)) {
+          if (k !== 'reload' && v > bestCd) { best = k; bestCd = v; }
+        }
+        if (best) {
+          this.abilityCooldowns[best] = 0;
+          this.emitMessage(`🔋 Recarga: ${this.abilities[best].name} lista`);
+        }
+        break;
+      }
+      case 'oracle': {
+        const cards = [];
+        for (let i = 0; i < 2; i++) {
+          const idx = this.communityCards.length + i;
+          if (idx < 5) cards.push(this.deck.peekAt ? this.deck.peekAt(i) : this.deck.peek());
+        }
+        if (this.onAbilityResult) this.onAbilityResult({ ability: 'oracle', cards });
+        this.emitMessage('🔮 Oráculo revela el futuro');
+        break;
+      }
+      case 'sabotage': {
+        const bots5 = this.players.filter(p => p.isBot && !p.folded);
+        if (bots5.length > 0) {
+          const t = bots5[Math.floor(Math.random() * bots5.length)];
+          t.folded = true;
+          t.lastAction = 'SABOTAJE';
+          this.emitMessage(`💣 ${t.name} fue saboteado y foldea`);
+        }
+        break;
+      }
+      case 'revival':
+        player._revivalActive = true;
+        this.emitMessage('💎 Revivir activo - 50% recuperación si pierdes');
+        break;
+      case 'tax': {
+        let taxTotal = 0;
+        this.players.filter(p => p.isBot && !p.folded && p.chips > 0).forEach(b => {
+          const t = Math.floor(b.chips * 0.05);
+          b.chips -= t;
+          this.pot += t;
+          taxTotal += t;
+        });
+        this.emitMessage(`📜 Impuesto recaudado: $${taxTotal}`);
+        break;
+      }
+      case 'insight': {
+        const bots6 = this.players.filter(p => p.isBot && !p.folded && p.holeCards.length > 0);
+        if (bots6.length > 0) {
+          const t = bots6[Math.floor(Math.random() * bots6.length)];
+          const strength = t.holeCards[0].rank === 'A' || t.holeCards[0].rank === 'K' ? 'FUERTE' : 'DÉBIL';
+          this.emitMessage(`🧠 ${t.name} tiene mano ${strength}`);
+        }
+        break;
+      }
+      case 'wildcard':
+        player._wildcardActive = true;
+        this.emitMessage('🃏 ¡Comodín activado!');
+        break;
+      case 'phantom':
+        player._phantomFold = true;
+        this.emitMessage('👤 Fantasma activo - fold sin perder apuesta');
+        break;
+      case 'jackpot': {
+        const roll = Math.random();
+        if (roll < 0.2) {
+          this.pot *= 3;
+          this.emitMessage('🎰 ¡¡¡JACKPOT!!! Pozo x3!');
+        } else {
+          this.emitMessage('🎰 Sin suerte... el jackpot no cayó');
+        }
+        break;
+      }
+      case 'aura':
+        this.players.filter(p => p.isBot && !p.folded).forEach(b => { b._auraEffect = true; });
+        this.emitMessage('✨ Aura activa - bots intimidados');
+        break;
+      case 'counter':
+        player._counterActive = true;
+        this.emitMessage('⚡ Contra preparado');
         break;
     }
 

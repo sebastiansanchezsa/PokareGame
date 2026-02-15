@@ -207,33 +207,12 @@
       <!-- Other players info -->
       <div class="hud-players" id="players-display"></div>
 
-      <!-- Abilities bar -->
-      <div class="abilities-bar" id="abilities-bar" style="display:none">
-        <button class="ability-btn ability-peek" data-ability="peek" title="Ve la próxima carta comunitaria ($100)">
-          <div class="ability-icon-wrap"><span class="ability-icon">&#128065;</span></div>
-          <span class="ability-name">Visión</span><span class="ability-cost">$100</span>
-          <div class="ability-cd" id="cd-peek"></div>
-        </button>
-        <button class="ability-btn ability-shield" data-ability="shield" title="Protege tu apuesta ($150)">
-          <div class="ability-icon-wrap"><span class="ability-icon">&#128737;</span></div>
-          <span class="ability-name">Escudo</span><span class="ability-cost">$150</span>
-          <div class="ability-cd" id="cd-shield"></div>
-        </button>
-        <button class="ability-btn ability-intimidate" data-ability="intimidate" title="Revela palo de carta rival ($75)">
-          <div class="ability-icon-wrap"><span class="ability-icon">&#128123;</span></div>
-          <span class="ability-name">Intimidar</span><span class="ability-cost">$75</span>
-          <div class="ability-cd" id="cd-intimidate"></div>
-        </button>
-        <button class="ability-btn ability-swap" data-ability="swap" title="Cambia una carta ($200)">
-          <div class="ability-icon-wrap"><span class="ability-icon">&#128260;</span></div>
-          <span class="ability-name">Cambio</span><span class="ability-cost">$200</span>
-          <div class="ability-cd" id="cd-swap"></div>
-        </button>
-        <button class="ability-btn ability-double" data-ability="doubledown" title="Doble o Nada (GRATIS)">
-          <div class="ability-icon-wrap"><span class="ability-icon">&#9876;&#65039;</span></div>
-          <span class="ability-name">Doble</span><span class="ability-cost">GRATIS</span>
-          <div class="ability-cd" id="cd-doubledown"></div>
-        </button>
+      <!-- Abilities panel -->
+      <div class="abilities-panel" id="abilities-bar" style="display:none">
+        <button class="abilities-toggle" id="abilities-toggle">HABILIDADES ▼</button>
+        <div class="abilities-grid" id="abilities-grid">
+          <!-- Populated dynamically from GameManager.abilities -->
+        </div>
       </div>
 
       <!-- Bottom controls -->

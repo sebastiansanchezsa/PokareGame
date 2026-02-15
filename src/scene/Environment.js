@@ -647,7 +647,7 @@ export class Environment {
   }
 
   createFog() {
-    this.scene.fog = new THREE.FogExp2(0x201428, 0.022);
+    this.scene.fog = new THREE.FogExp2(0x201428, 0.012);
   }
 
   update(time) {

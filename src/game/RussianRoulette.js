@@ -100,8 +100,12 @@ export class RussianRoulette {
     this.muzzleFlash.position.z = -0.24;
     this.revolverGroup.add(this.muzzleFlash);
 
-    // Position relative to camera (will be moved during animation)
-    this.revolverGroup.position.set(0.3, -0.4, -0.5);
+    // Position on table - visible at all times
+    this.tablePos = new THREE.Vector3(0.6, 0.97, 0.3);
+    this.revolverGroup.position.copy(this.tablePos);
+    this.revolverGroup.rotation.set(0, Math.PI * 0.7, 0);
+    this.revolverGroup.scale.setScalar(1.2);
+    this.revolverGroup.visible = true;
     this.scene.add(this.revolverGroup);
   }
 
@@ -116,13 +120,12 @@ export class RussianRoulette {
       this.survived = Math.random() >= (1 / 6);
       this.isPlaying = true;
       this.animTime = 0;
-      this.animPhase = 'raise';
+      this.animPhase = 'grab';
       this.targetIsSelf = targetIsSelf;
+      this.grabStartPos = this.revolverGroup.position.clone();
+      this.grabStartRot = this.revolverGroup.rotation.clone();
 
       this.revolverGroup.visible = true;
-      this.revolverGroup.position.set(0.4, -0.5, -0.6);
-      this.revolverGroup.rotation.set(0, 0, 0);
-
       this.onComplete = resolve;
     });
   }
@@ -141,6 +144,30 @@ export class RussianRoulette {
     const camUp = new THREE.Vector3(0, 1, 0).applyQuaternion(this.camera.quaternion);
 
     switch (this.animPhase) {
+      case 'grab': {
+        // Lift gun from table toward camera (0 - 1s)
+        const t = Math.min(this.animTime / 1.0, 1);
+        const ease = t * t * (3 - 2 * t);
+        
+        const targetOffset = camRight.clone().multiplyScalar(0.25)
+          .add(camUp.clone().multiplyScalar(-0.3))
+          .add(camDir.clone().multiplyScalar(0.4));
+        const targetPos = camPos.clone().add(targetOffset);
+        
+        this.revolverGroup.position.lerpVectors(this.grabStartPos, targetPos, ease);
+        this.revolverGroup.scale.setScalar(1.2 - ease * 0.2);
+        
+        // Smoothly rotate toward camera orientation
+        const targetQuat = this.camera.quaternion.clone();
+        this.revolverGroup.quaternion.slerp(targetQuat, ease);
+        
+        if (this.animTime >= 1.0) {
+          this.animPhase = 'raise';
+          this.animTime = 0;
+        }
+        break;
+      }
+
       case 'raise': {
         // Raise gun from bottom-right (0 - 1.2s)
         const t = Math.min(this.animTime / 1.2, 1);
@@ -315,8 +342,13 @@ export class RussianRoulette {
   finish() {
     this.isPlaying = false;
     this.animPhase = 'idle';
-    this.revolverGroup.visible = false;
     this.muzzleFlash.material.opacity = 0;
+
+    // Return gun to table
+    this.revolverGroup.position.copy(this.tablePos);
+    this.revolverGroup.rotation.set(0, Math.PI * 0.7, 0);
+    this.revolverGroup.scale.setScalar(1.2);
+    this.revolverGroup.visible = true;
 
     if (this.onComplete) {
       this.onComplete(this.survived);
