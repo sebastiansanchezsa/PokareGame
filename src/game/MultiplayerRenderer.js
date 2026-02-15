@@ -192,48 +192,102 @@ export class MultiplayerRenderer {
    * Render realistic poker chips with canvas textures
    */
   createChipTexture(color, value) {
-    const size = 128;
+    const size = 256;
     const canvas = document.createElement('canvas');
     canvas.width = size; canvas.height = size;
     const ctx = canvas.getContext('2d');
     const r = size / 2;
 
-    // Main circle
+    // Outer rim (dark ring)
     ctx.beginPath();
-    ctx.arc(r, r, r - 2, 0, Math.PI * 2);
-    ctx.fillStyle = color;
+    ctx.arc(r, r, r - 1, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
     ctx.fill();
 
-    // Edge dashes (8 white stripes around rim)
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 4;
-    for (let i = 0; i < 8; i++) {
-      const a = (i / 8) * Math.PI * 2;
-      const x1 = r + Math.cos(a) * (r - 6);
-      const y1 = r + Math.sin(a) * (r - 6);
-      const x2 = r + Math.cos(a) * (r - 16);
-      const y2 = r + Math.sin(a) * (r - 16);
-      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    // Main body with radial gradient
+    const bodyGrad = ctx.createRadialGradient(r * 0.8, r * 0.8, 0, r, r, r);
+    bodyGrad.addColorStop(0, color);
+    bodyGrad.addColorStop(0.85, color);
+    bodyGrad.addColorStop(1, 'rgba(0,0,0,0.3)');
+    ctx.beginPath();
+    ctx.arc(r, r, r - 4, 0, Math.PI * 2);
+    ctx.fillStyle = bodyGrad;
+    ctx.fill();
+
+    // Edge stripes (alternating white and colored)
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2;
+      const a2 = a + 0.12;
+      ctx.beginPath();
+      ctx.arc(r, r, r - 5, a, a2);
+      ctx.arc(r, r, r - 20, a2, a, true);
+      ctx.closePath();
+      ctx.fillStyle = i % 3 === 0 ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.2)';
+      ctx.fill();
     }
 
-    // Inner circle
+    // Outer decorative ring
     ctx.beginPath();
-    ctx.arc(r, r, r * 0.55, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255,255,255,0.15)';
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.arc(r, r, r - 22, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // Value text
+    // Inner circle (lighter area)
+    ctx.beginPath();
+    ctx.arc(r, r, r * 0.48, 0, Math.PI * 2);
+    const innerGrad = ctx.createRadialGradient(r, r, 0, r, r, r * 0.48);
+    innerGrad.addColorStop(0, 'rgba(255,255,255,0.18)');
+    innerGrad.addColorStop(1, 'rgba(255,255,255,0.06)');
+    ctx.fillStyle = innerGrad;
+    ctx.fill();
+
+    // Inner ring border
+    ctx.beginPath();
+    ctx.arc(r, r, r * 0.48, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Inner decorative dots
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      const dx = r + Math.cos(a) * (r * 0.38);
+      const dy = r + Math.sin(a) * (r * 0.38);
+      ctx.beginPath();
+      ctx.arc(dx, dy, 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.fill();
+    }
+
+    // Value text with bold shadow
     if (value) {
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,0.7)';
+      ctx.shadowBlur = 4;
+      ctx.shadowOffsetY = 1;
       ctx.fillStyle = '#ffffff';
-      ctx.font = `bold ${size * 0.28}px Arial`;
+      ctx.font = `bold ${size * 0.22}px "Arial Black", Arial`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.shadowColor = 'rgba(0,0,0,0.5)';
-      ctx.shadowBlur = 3;
       ctx.fillText(value, r, r);
+      ctx.restore();
+
+      // Dollar sign above value
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.font = `bold ${size * 0.1}px Arial`;
+      ctx.fillText('$', r, r - size * 0.16);
+    }
+
+    // Subtle texture noise
+    for (let i = 0; i < 800; i++) {
+      const nx = Math.random() * size;
+      const ny = Math.random() * size;
+      const dist = Math.sqrt((nx - r) ** 2 + (ny - r) ** 2);
+      if (dist < r - 4) {
+        ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.04})`;
+        ctx.fillRect(nx, ny, 1, 1);
+      }
     }
 
     const tex = new THREE.CanvasTexture(canvas);

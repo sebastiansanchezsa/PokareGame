@@ -16,6 +16,63 @@ export class Table {
     this.createDealerButton();
   }
 
+  generateWoodTexture(w, h) {
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const ctx = c.getContext('2d');
+
+    // Rich dark wood base
+    const grad = ctx.createLinearGradient(0, 0, w, 0);
+    grad.addColorStop(0, '#3a1e0a');
+    grad.addColorStop(0.3, '#4a2810');
+    grad.addColorStop(0.5, '#3d2008');
+    grad.addColorStop(0.7, '#4e2c12');
+    grad.addColorStop(1, '#3a1e0a');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+
+    // Wood grain lines
+    for (let i = 0; i < 60; i++) {
+      const y = Math.random() * h;
+      const thickness = 0.5 + Math.random() * 2;
+      const alpha = 0.04 + Math.random() * 0.08;
+      ctx.strokeStyle = `rgba(${80 + Math.random() * 50},${40 + Math.random() * 30},${10 + Math.random() * 20},${alpha})`;
+      ctx.lineWidth = thickness;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      for (let x = 0; x < w; x += 10) {
+        ctx.lineTo(x, y + Math.sin(x * 0.02 + i) * 3 + Math.sin(x * 0.005) * 6);
+      }
+      ctx.stroke();
+    }
+
+    // Knots
+    for (let i = 0; i < 3; i++) {
+      const kx = Math.random() * w;
+      const ky = Math.random() * h;
+      const kr = 5 + Math.random() * 10;
+      const kgrad = ctx.createRadialGradient(kx, ky, 0, kx, ky, kr);
+      kgrad.addColorStop(0, 'rgba(30,12,4,0.3)');
+      kgrad.addColorStop(1, 'rgba(60,30,10,0)');
+      ctx.fillStyle = kgrad;
+      ctx.beginPath();
+      ctx.arc(kx, ky, kr, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Subtle glossy sheen
+    const sheen = ctx.createLinearGradient(0, 0, w, h);
+    sheen.addColorStop(0, 'rgba(255,220,180,0.03)');
+    sheen.addColorStop(0.5, 'rgba(255,220,180,0.06)');
+    sheen.addColorStop(1, 'rgba(255,220,180,0.02)');
+    ctx.fillStyle = sheen;
+    ctx.fillRect(0, 0, w, h);
+
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }
+
   createTableTop() {
     const shape = new THREE.Shape();
     const rx = 2.0;
@@ -30,12 +87,14 @@ export class Table {
       else shape.lineTo(x, y);
     }
 
+    const woodTex = this.generateWoodTexture(512, 256);
     const extrudeSettings = { depth: 0.08, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 3 };
     const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
     const mat = new THREE.MeshStandardMaterial({
-      color: 0x2a1008,
-      roughness: 0.5,
-      metalness: 0.15,
+      map: woodTex,
+      color: 0x5a3518,
+      roughness: 0.45,
+      metalness: 0.1,
     });
 
     const tableTop = new THREE.Mesh(geo, mat);
@@ -165,9 +224,9 @@ export class Table {
   createTableLegs() {
     const legGeo = new THREE.CylinderGeometry(0.06, 0.08, 0.85, 8);
     const legMat = new THREE.MeshStandardMaterial({
-      color: 0x1a0820,
-      metalness: 0.5,
-      roughness: 0.3,
+      color: 0x4a2810,
+      metalness: 0.1,
+      roughness: 0.5,
     });
 
     const positions = [

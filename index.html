@@ -346,17 +346,13 @@
           <button class="mp-radio-btn" data-radio="chillwave">Chillwave</button>
           <button class="mp-radio-btn" data-radio="vaporwave">Vaporwave</button>
         </div>
-        <div class="mp-section-label">YOUTUBE URL</div>
+        <div class="mp-section-label">YOUTUBE</div>
         <div class="mp-yt-row">
-          <input type="text" id="mp-yt-url" class="neon-input mp-yt-input" placeholder="youtube.com/watch?v=...">
-          <button class="mp-btn mp-yt-add" id="mp-yt-add">+</button>
+          <input type="text" id="mp-yt-url" class="neon-input mp-yt-input" placeholder="URL o nombre de canción...">
+          <button class="mp-btn mp-yt-add" id="mp-yt-add">&#9654;</button>
         </div>
-        <div class="mp-section-label">SPOTIFY</div>
-        <div class="mp-spotify-row">
-          <button class="mp-btn mp-spotify-btn" id="mp-spotify-link" title="Abrir Spotify">
-            <span style="color:#1db954;font-size:0.8rem">&#9679;</span>
-          </button>
-          <span class="mp-spotify-hint">Abre Spotify y reproduce ahí</span>
+        <div class="mp-yt-embed hidden" id="mp-yt-embed">
+          <iframe id="mp-yt-iframe" width="100%" height="120" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
         </div>
         <label class="mp-upload-label">
           <span>+ Agregar Archivo</span>
@@ -367,49 +363,93 @@
 
     <!-- Shop overlay -->
     <div id="shop-overlay" class="menu-screen hidden">
-      <h2 class="section-title">TIENDA</h2>
-      <p class="shop-subtitle">Gasta tus fichas en cosméticos</p>
-      <div class="shop-balance">Fichas: <span id="shop-balance">0</span></div>
+      <h2 class="section-title">TIENDA POKARE</h2>
+      <div class="shop-header">
+        <div class="shop-balance-box">
+          <span class="shop-balance-icon">$</span>
+          <span id="shop-balance">0</span>
+          <span class="shop-balance-label">fichas</span>
+        </div>
+      </div>
+      <div class="shop-tabs">
+        <button class="shop-tab active" data-tab="all">Todo</button>
+        <button class="shop-tab" data-tab="card">Dorsos</button>
+        <button class="shop-tab" data-tab="table">Mesas</button>
+        <button class="shop-tab" data-tab="emote">Emotes</button>
+        <button class="shop-tab" data-tab="chip">Fichas</button>
+      </div>
       <div class="shop-grid" id="shop-grid">
-        <div class="shop-item" data-item="card-gold" data-price="5000">
+        <div class="shop-item" data-item="card-gold" data-price="5000" data-cat="card">
           <div class="shop-item-preview" style="background:linear-gradient(135deg,#ffd700,#ff8c00)">&#9824;</div>
           <span class="shop-item-name">Dorso Dorado</span>
-          <span class="shop-item-price">5000 fichas</span>
+          <span class="shop-item-price">$5,000</span>
+          <button class="shop-item-btn">COMPRAR</button>
         </div>
-        <div class="shop-item" data-item="card-neon" data-price="3000">
+        <div class="shop-item" data-item="card-neon" data-price="3000" data-cat="card">
           <div class="shop-item-preview" style="background:linear-gradient(135deg,#ff6ec7,#7b2ff7)">&#9829;</div>
           <span class="shop-item-name">Dorso Neón</span>
-          <span class="shop-item-price">3000 fichas</span>
+          <span class="shop-item-price">$3,000</span>
+          <button class="shop-item-btn">COMPRAR</button>
         </div>
-        <div class="shop-item" data-item="card-skull" data-price="4000">
+        <div class="shop-item" data-item="card-skull" data-price="4000" data-cat="card">
           <div class="shop-item-preview" style="background:linear-gradient(135deg,#333,#880000)">&#9760;</div>
           <span class="shop-item-name">Dorso Skull</span>
-          <span class="shop-item-price">4000 fichas</span>
+          <span class="shop-item-price">$4,000</span>
+          <button class="shop-item-btn">COMPRAR</button>
         </div>
-        <div class="shop-item" data-item="table-red" data-price="8000">
+        <div class="shop-item" data-item="card-royal" data-price="7000" data-cat="card">
+          <div class="shop-item-preview" style="background:linear-gradient(135deg,#4a0080,#c8a84e)">&#9813;</div>
+          <span class="shop-item-name">Dorso Royal</span>
+          <span class="shop-item-price">$7,000</span>
+          <button class="shop-item-btn">COMPRAR</button>
+        </div>
+        <div class="shop-item" data-item="table-red" data-price="8000" data-cat="table">
           <div class="shop-item-preview" style="background:linear-gradient(135deg,#8b0000,#ff2255)">&#9830;</div>
           <span class="shop-item-name">Mesa Roja</span>
-          <span class="shop-item-price">8000 fichas</span>
+          <span class="shop-item-price">$8,000</span>
+          <button class="shop-item-btn">COMPRAR</button>
         </div>
-        <div class="shop-item" data-item="table-blue" data-price="8000">
+        <div class="shop-item" data-item="table-blue" data-price="8000" data-cat="table">
           <div class="shop-item-preview" style="background:linear-gradient(135deg,#001a66,#00ccff)">&#9827;</div>
           <span class="shop-item-name">Mesa Azul</span>
-          <span class="shop-item-price">8000 fichas</span>
+          <span class="shop-item-price">$8,000</span>
+          <button class="shop-item-btn">COMPRAR</button>
         </div>
-        <div class="shop-item" data-item="emote-fire" data-price="1000">
+        <div class="shop-item" data-item="table-black" data-price="12000" data-cat="table">
+          <div class="shop-item-preview" style="background:linear-gradient(135deg,#111,#333)">&#9824;</div>
+          <span class="shop-item-name">Mesa Negra VIP</span>
+          <span class="shop-item-price">$12,000</span>
+          <button class="shop-item-btn">COMPRAR</button>
+        </div>
+        <div class="shop-item" data-item="emote-fire" data-price="1000" data-cat="emote">
           <div class="shop-item-preview" style="background:linear-gradient(135deg,#ff4500,#ff8c00)">&#128293;</div>
           <span class="shop-item-name">Emote Fuego</span>
-          <span class="shop-item-price">1000 fichas</span>
+          <span class="shop-item-price">$1,000</span>
+          <button class="shop-item-btn">COMPRAR</button>
         </div>
-        <div class="shop-item" data-item="emote-skull" data-price="1500">
+        <div class="shop-item" data-item="emote-skull" data-price="1500" data-cat="emote">
           <div class="shop-item-preview" style="background:linear-gradient(135deg,#333,#666)">&#128128;</div>
           <span class="shop-item-name">Emote Calavera</span>
-          <span class="shop-item-price">1500 fichas</span>
+          <span class="shop-item-price">$1,500</span>
+          <button class="shop-item-btn">COMPRAR</button>
         </div>
-        <div class="shop-item" data-item="chip-diamond" data-price="10000">
+        <div class="shop-item" data-item="emote-crown" data-price="2000" data-cat="emote">
+          <div class="shop-item-preview" style="background:linear-gradient(135deg,#c8a84e,#fff)">&#128081;</div>
+          <span class="shop-item-name">Emote Corona</span>
+          <span class="shop-item-price">$2,000</span>
+          <button class="shop-item-btn">COMPRAR</button>
+        </div>
+        <div class="shop-item" data-item="chip-diamond" data-price="10000" data-cat="chip">
           <div class="shop-item-preview" style="background:linear-gradient(135deg,#00bfff,#e0ffff)">&#128142;</div>
           <span class="shop-item-name">Fichas Diamante</span>
-          <span class="shop-item-price">10000 fichas</span>
+          <span class="shop-item-price">$10,000</span>
+          <button class="shop-item-btn">COMPRAR</button>
+        </div>
+        <div class="shop-item" data-item="chip-ruby" data-price="15000" data-cat="chip">
+          <div class="shop-item-preview" style="background:linear-gradient(135deg,#cc0033,#ff4466)">&#128142;</div>
+          <span class="shop-item-name">Fichas Rubí</span>
+          <span class="shop-item-price">$15,000</span>
+          <button class="shop-item-btn">COMPRAR</button>
         </div>
       </div>
       <div class="setup-buttons">

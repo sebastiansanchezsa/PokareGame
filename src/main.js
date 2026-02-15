@@ -66,7 +66,7 @@ function init() {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.6;
+  renderer.toneMappingExposure = 1.9;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
 
   scene = new THREE.Scene();
@@ -515,7 +515,7 @@ function startSinglePlayer() {
   gameManager.onStreakUpdate = onStreakUpdate;
 
   gameStarted = true;
-  audioManager.init(); audioManager.resume(); audioManager.startMusic();
+  audioManager.init(); audioManager.resume();
 
   setTimeout(() => {
     gameManager.startGame();
@@ -571,7 +571,7 @@ function startMultiplayerGame() {
   mpRenderer.clearTable();
 
   gameStarted = true;
-  audioManager.init(); audioManager.resume(); audioManager.startMusic();
+  audioManager.init(); audioManager.resume();
   showMessage('PARTIDA INICIADA');
 }
 
@@ -1073,43 +1073,76 @@ function saveShopState() {
 
 function updateShopBalance() {
   const el = document.getElementById('shop-balance');
-  if (el) el.textContent = shopState.coins;
-  // Mark owned items
+  if (el) el.textContent = shopState.coins.toLocaleString();
+
   document.querySelectorAll('.shop-item').forEach(item => {
     const id = item.dataset.item;
+    const btn = item.querySelector('.shop-item-btn');
+    const category = id.split('-')[0];
+
+    item.classList.remove('owned', 'equipped');
+
     if (shopState.owned.includes(id)) {
       item.classList.add('owned');
+      if (shopState.equipped[category] === id) {
+        item.classList.add('equipped');
+        if (btn) btn.textContent = 'EQUIPADO';
+      } else {
+        if (btn) btn.textContent = 'EQUIPAR';
+      }
     } else {
-      item.classList.remove('owned');
+      if (btn) btn.textContent = 'COMPRAR';
     }
   });
 }
 
 function setupShopUI() {
-  document.querySelectorAll('.shop-item').forEach(item => {
-    item.addEventListener('click', () => {
+  // Tab filtering
+  document.querySelectorAll('.shop-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.shop-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const cat = tab.dataset.tab;
+      document.querySelectorAll('.shop-item').forEach(item => {
+        if (cat === 'all' || item.dataset.cat === cat) {
+          item.style.display = '';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    });
+  });
+
+  // Buy / Equip via button
+  document.querySelectorAll('.shop-item-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const item = btn.closest('.shop-item');
       const id = item.dataset.item;
       const price = parseInt(item.dataset.price);
+      const category = id.split('-')[0];
+
       if (shopState.owned.includes(id)) {
-        // Already owned - equip it
-        const category = id.split('-')[0]; // card, table, emote, chip
+        // Equip
         shopState.equipped[category] = id;
         saveShopState();
+        updateShopBalance();
         showMessage(`Equipado: ${item.querySelector('.shop-item-name').textContent}`);
         audioManager.playSound('click');
         return;
       }
       if (shopState.coins < price) {
-        showMessage('¡Fichas insuficientes!');
+        showMessage('Fichas insuficientes');
+        btn.style.animation = 'shake 0.3s';
+        setTimeout(() => btn.style.animation = '', 300);
         return;
       }
       shopState.coins -= price;
       shopState.owned.push(id);
-      const category = id.split('-')[0];
       shopState.equipped[category] = id;
       saveShopState();
       updateShopBalance();
-      showMessage(`¡Comprado: ${item.querySelector('.shop-item-name').textContent}!`);
+      showMessage(`Comprado: ${item.querySelector('.shop-item-name').textContent}`);
       audioManager.playSound('win');
     });
   });
@@ -1127,10 +1160,8 @@ const musicPlayer = {
   currentIndex: -1,
   playing: false,
   radioMode: false,
-  ytIframe: null,
 };
 
-// Free internet radio streams (80s / synthwave / retrowave)
 const radioStations = {
   synthwave: { name: 'Synthwave FM', url: 'https://stream.synthwave.hu/listen/synthwave/radio.mp3' },
   retrowave: { name: 'Nightride FM', url: 'https://stream.nightride.fm/nightride.m4a' },
@@ -1182,6 +1213,7 @@ function setupMusicPlayerUI() {
   // Prev / Next
   prevBtn.addEventListener('click', () => {
     if (musicPlayer.tracks.length === 0) return;
+    hideYTEmbed();
     musicPlayer.radioMode = false;
     musicPlayer.currentIndex = (musicPlayer.currentIndex - 1 + musicPlayer.tracks.length) % musicPlayer.tracks.length;
     loadTrack(musicPlayer.currentIndex);
@@ -1192,6 +1224,7 @@ function setupMusicPlayerUI() {
 
   nextBtn.addEventListener('click', () => {
     if (musicPlayer.tracks.length === 0) return;
+    hideYTEmbed();
     musicPlayer.radioMode = false;
     musicPlayer.currentIndex = (musicPlayer.currentIndex + 1) % musicPlayer.tracks.length;
     loadTrack(musicPlayer.currentIndex);
@@ -1212,11 +1245,10 @@ function setupMusicPlayerUI() {
       if (!station) return;
 
       clearActiveRadio();
+      hideYTEmbed();
       btn.classList.add('active');
 
-      // Stop current and switch to radio stream
       if (musicPlayer.audio) { musicPlayer.audio.pause(); }
-      stopYTIframe();
       musicPlayer.audio = new Audio(station.url);
       musicPlayer.audio.volume = (volSlider.value || 50) / 100;
       musicPlayer.audio.crossOrigin = 'anonymous';
@@ -1230,23 +1262,28 @@ function setupMusicPlayerUI() {
     });
   });
 
-  // YouTube URL
+  // YouTube - supports both URL and search query
   document.getElementById('mp-yt-add').addEventListener('click', () => {
     const input = document.getElementById('mp-yt-url');
-    const url = input.value.trim();
-    if (!url) return;
-    const videoId = extractYTVideoId(url);
-    if (!videoId) {
-      showMessage('URL de YouTube no válida');
-      return;
+    const query = input.value.trim();
+    if (!query) return;
+
+    // Check if it's a direct YouTube URL
+    const videoId = extractYTVideoId(query);
+    if (videoId) {
+      playYouTubeEmbed(videoId);
+    } else {
+      // Treat as search query - open YouTube search results in embed
+      playYouTubeSearch(query);
     }
-    playYouTubeAudio(videoId);
     input.value = '';
   });
 
-  // Spotify link
-  document.getElementById('mp-spotify-link').addEventListener('click', () => {
-    window.open('https://open.spotify.com', '_blank');
+  // Also submit on Enter key
+  document.getElementById('mp-yt-url').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      document.getElementById('mp-yt-add').click();
+    }
   });
 }
 
@@ -1266,34 +1303,49 @@ function extractYTVideoId(url) {
   return null;
 }
 
-function playYouTubeAudio(videoId) {
-  // Use an invisible YouTube iframe embed to play audio
-  stopYTIframe();
+function playYouTubeEmbed(videoId) {
+  // Stop current audio
   if (musicPlayer.audio) { musicPlayer.audio.pause(); musicPlayer.playing = false; }
   clearActiveRadio();
-
-  const iframe = document.createElement('iframe');
-  iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;pointer-events:none';
-  iframe.allow = 'autoplay';
-  iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=0`;
-  document.body.appendChild(iframe);
-  musicPlayer.ytIframe = iframe;
   musicPlayer.radioMode = true;
   musicPlayer.playing = true;
-  document.getElementById('mp-now').textContent = `YouTube: ${videoId}`;
+
+  // Show embedded player in the panel
+  const embedDiv = document.getElementById('mp-yt-embed');
+  const iframe = document.getElementById('mp-yt-iframe');
+  embedDiv.classList.remove('hidden');
+  iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
+
+  document.getElementById('mp-now').textContent = `YouTube`;
   document.getElementById('mp-play').innerHTML = '&#9646;&#9646;';
 }
 
-function stopYTIframe() {
-  if (musicPlayer.ytIframe) {
-    musicPlayer.ytIframe.remove();
-    musicPlayer.ytIframe = null;
-  }
+function playYouTubeSearch(query) {
+  // Stop current audio
+  if (musicPlayer.audio) { musicPlayer.audio.pause(); musicPlayer.playing = false; }
+  clearActiveRadio();
+  musicPlayer.radioMode = true;
+
+  // Show YouTube search results in the embed iframe
+  const embedDiv = document.getElementById('mp-yt-embed');
+  const iframe = document.getElementById('mp-yt-iframe');
+  embedDiv.classList.remove('hidden');
+  const encoded = encodeURIComponent(query);
+  iframe.src = `https://www.youtube.com/embed?listType=search&list=${encoded}`;
+
+  document.getElementById('mp-now').textContent = `Buscando: ${query}`;
+}
+
+function hideYTEmbed() {
+  const embedDiv = document.getElementById('mp-yt-embed');
+  const iframe = document.getElementById('mp-yt-iframe');
+  if (embedDiv) embedDiv.classList.add('hidden');
+  if (iframe) iframe.src = '';
 }
 
 function loadTrack(idx) {
   if (idx < 0 || idx >= musicPlayer.tracks.length) return;
-  stopYTIframe();
+  hideYTEmbed();
   if (musicPlayer.audio) { musicPlayer.audio.pause(); musicPlayer.audio.src = ''; }
   musicPlayer.radioMode = false;
   musicPlayer.audio = new Audio(musicPlayer.tracks[idx].url);
@@ -1310,7 +1362,7 @@ function loadTrack(idx) {
 function updateMPDisplay() {
   const now = document.getElementById('mp-now');
   if (!now) return;
-  if (musicPlayer.radioMode) return; // Don't overwrite radio station name
+  if (musicPlayer.radioMode) return;
   if (musicPlayer.tracks.length === 0) {
     now.textContent = 'Sin pista';
   } else {
