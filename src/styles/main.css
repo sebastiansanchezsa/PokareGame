@@ -1426,54 +1426,144 @@ body {
   border-radius: 6px;
 }
 
-/* ===== SHOP ===== */
-.shop-header {
+/* ===== SHOP (Fortnite-style) ===== */
+.shop-layout {
   display: flex;
-  justify-content: center;
-  margin-bottom: 0.8rem;
+  gap: 16px;
+  max-width: 900px;
+  margin: 0 auto;
+  min-height: 450px;
+}
+.shop-preview-panel {
+  flex: 0 0 320px;
+  background: rgba(10,5,25,0.85);
+  border: 1px solid rgba(255,110,199,0.2);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  backdrop-filter: blur(12px);
+}
+.shop-preview-header { text-align: center; margin-bottom: 8px; }
+.shop-preview-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.85rem;
+  color: #ff6ec7;
+  margin: 0 0 4px;
+  text-shadow: 0 0 10px rgba(255,110,199,0.4);
+}
+.shop-preview-rarity {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.4);
+}
+.shop-preview-rarity.COMUN { color: #aaa; }
+.shop-preview-rarity.RARO { color: #00aaff; }
+.shop-preview-rarity.EPICO { color: #cc44ff; }
+.shop-preview-rarity.LEGENDARIO { color: #ffaa00; text-shadow: 0 0 8px rgba(255,170,0,0.4); }
+#shop-preview-canvas {
+  width: 100%;
+  height: 260px;
+  border-radius: 12px;
+  background: radial-gradient(ellipse at center, rgba(30,15,50,0.9), rgba(10,5,20,1));
+  border: 1px solid rgba(255,255,255,0.05);
+  margin-bottom: 8px;
+}
+.shop-preview-info { text-align: center; flex: 1; }
+.shop-preview-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.9rem;
+  color: #fff;
+  margin-bottom: 4px;
+}
+.shop-preview-desc {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.65rem;
+  color: rgba(255,255,255,0.45);
+  line-height: 1.3;
+}
+.shop-preview-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  gap: 10px;
 }
 .shop-balance-box {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   background: rgba(255,215,0,0.08);
-  border: 1px solid rgba(255,215,0,0.3);
-  border-radius: 10px;
-  padding: 6px 18px;
+  border: 1px solid rgba(255,215,0,0.25);
+  border-radius: 8px;
+  padding: 5px 12px;
 }
 .shop-balance-icon {
   font-family: 'Orbitron', sans-serif;
-  font-size: 1.1rem;
+  font-size: 0.85rem;
   color: #ffd700;
   font-weight: 900;
 }
 .shop-balance-box #shop-balance {
   font-family: 'Orbitron', sans-serif;
-  font-size: 1.1rem;
+  font-size: 0.85rem;
   color: #ffd700;
-  text-shadow: 0 0 8px rgba(255,215,0,0.4);
 }
 .shop-balance-label {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 0.7rem;
-  color: rgba(255,215,0,0.6);
+  font-size: 0.6rem;
+  color: rgba(255,215,0,0.5);
   text-transform: uppercase;
+}
+.shop-buy-btn {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #ff6ec7, #7b2ff7);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 24px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+.shop-buy-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: 0 4px 16px rgba(255,110,199,0.4);
+}
+.shop-buy-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: rgba(100,100,100,0.3);
+}
+.shop-buy-btn.owned {
+  background: linear-gradient(135deg, #00cc66, #00aa88);
+}
+.shop-buy-btn.equipped {
+  background: linear-gradient(135deg, #c8a84e, #aa8833);
+}
+.shop-items-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 .shop-tabs {
   display: flex;
-  justify-content: center;
   gap: 4px;
-  margin-bottom: 1rem;
+  margin-bottom: 10px;
 }
 .shop-tab {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-weight: 600;
   color: rgba(255,255,255,0.5);
   background: rgba(255,255,255,0.04);
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 8px;
-  padding: 5px 14px;
+  padding: 4px 12px;
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -1485,88 +1575,68 @@ body {
 }
 .shop-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  max-width: 720px;
-  margin: 0 auto 1.5rem;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  overflow-y: auto;
+  max-height: 420px;
+  padding-right: 4px;
 }
+.shop-grid::-webkit-scrollbar { width: 4px; }
+.shop-grid::-webkit-scrollbar-thumb { background: rgba(255,110,199,0.3); border-radius: 4px; }
 .shop-item {
-  background: rgba(10,5,20,0.75);
-  border: 1px solid rgba(255,110,199,0.15);
-  border-radius: 14px;
-  padding: 14px 8px 10px;
+  background: rgba(10,5,20,0.7);
+  border: 1px solid rgba(255,110,199,0.12);
+  border-radius: 10px;
+  padding: 10px 6px 8px;
   text-align: center;
   position: relative;
   transition: all 0.2s;
-  backdrop-filter: blur(8px);
+  cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 .shop-item:hover {
   border-color: rgba(255,110,199,0.5);
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(255,110,199,0.18);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(255,110,199,0.15);
+}
+.shop-item.selected {
+  border-color: #ff6ec7;
+  background: rgba(255,110,199,0.08);
+  box-shadow: 0 0 16px rgba(255,110,199,0.2);
 }
 .shop-item.owned {
-  border-color: rgba(0,255,136,0.4);
-}
-.shop-item.owned .shop-item-btn {
-  background: rgba(0,255,136,0.15);
-  border-color: rgba(0,255,136,0.4);
-  color: #00ff88;
+  border-color: rgba(0,255,136,0.35);
 }
 .shop-item.equipped {
-  border-color: rgba(255,215,0,0.6);
-  box-shadow: 0 0 12px rgba(255,215,0,0.15);
-}
-.shop-item.equipped .shop-item-btn {
-  background: rgba(255,215,0,0.15);
   border-color: rgba(255,215,0,0.5);
-  color: #ffd700;
+  box-shadow: 0 0 10px rgba(255,215,0,0.12);
 }
 .shop-item-preview {
-  width: 56px; height: 56px;
-  border-radius: 12px;
-  margin: 0 auto 8px;
+  width: 48px; height: 48px;
+  border-radius: 10px;
+  margin: 0 auto 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   color: #fff;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  text-shadow: 0 2px 6px rgba(0,0,0,0.5);
 }
 .shop-item-name {
   display: block;
   font-family: 'Rajdhani', sans-serif;
-  font-size: 0.72rem;
+  font-size: 0.62rem;
   font-weight: 600;
   color: #fff;
-  margin-bottom: 3px;
+  margin-bottom: 2px;
 }
 .shop-item-price {
   display: block;
   font-family: 'Orbitron', sans-serif;
-  font-size: 0.52rem;
+  font-size: 0.48rem;
   color: #ffd700;
-  margin-bottom: 6px;
-}
-.shop-item-btn {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 0.6rem;
-  font-weight: 700;
-  color: #ff6ec7;
-  background: rgba(255,110,199,0.08);
-  border: 1px solid rgba(255,110,199,0.3);
-  border-radius: 6px;
-  padding: 3px 12px;
-  cursor: pointer;
-  transition: all 0.15s;
-  text-transform: uppercase;
-}
-.shop-item-btn:hover {
-  background: rgba(255,110,199,0.2);
-  border-color: #ff6ec7;
 }
 
 /* ===== RESULT HAND TYPE ===== */
@@ -1594,6 +1664,9 @@ body {
   .abilities-bar { right: 5px; }
   .ability-btn { width: 55px; padding: 0.3rem; }
   .chat-box { width: 200px; }
-  .shop-grid { grid-template-columns: repeat(2, 1fr); }
+  .shop-layout { flex-direction: column; }
+  .shop-preview-panel { flex: 0 0 auto; }
+  #shop-preview-canvas { height: 180px; }
+  .shop-grid { grid-template-columns: repeat(2, 1fr); max-height: 260px; }
   .mp-panel { width: 180px; }
 }

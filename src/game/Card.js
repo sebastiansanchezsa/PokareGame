@@ -56,13 +56,14 @@ export class Card3D {
     const backTexture = new THREE.CanvasTexture(backCanvas);
     backTexture.minFilter = THREE.LinearFilter;
 
+    const edgeMat = new THREE.MeshStandardMaterial({ color: 0xd8d4cc, roughness: 0.7, metalness: 0.0 });
     const materials = [
-      new THREE.MeshStandardMaterial({ color: 0xf0f0f0, roughness: 0.3 }), // right
-      new THREE.MeshStandardMaterial({ color: 0xf0f0f0, roughness: 0.3 }), // left
-      new THREE.MeshStandardMaterial({ map: frontTexture, roughness: 0.4 }), // top (face)
-      new THREE.MeshStandardMaterial({ map: backTexture, roughness: 0.4 }), // bottom (back)
-      new THREE.MeshStandardMaterial({ color: 0xf0f0f0, roughness: 0.3 }), // front
-      new THREE.MeshStandardMaterial({ color: 0xf0f0f0, roughness: 0.3 }), // back
+      edgeMat, // right
+      edgeMat, // left
+      new THREE.MeshStandardMaterial({ map: frontTexture, roughness: 0.65, metalness: 0.0, color: 0xdddddd }), // top (face)
+      new THREE.MeshStandardMaterial({ map: backTexture, roughness: 0.6, metalness: 0.0, color: 0xdddddd }), // bottom (back)
+      edgeMat, // front
+      edgeMat, // back
     ];
 
     const cardMesh = new THREE.Mesh(geo, materials);
@@ -307,8 +308,9 @@ export class Card3D {
 
   update(delta) {
     if (this.targetPos) {
-      this.mesh.position.lerp(this.targetPos, delta * this.animSpeed);
-      if (this.mesh.position.distanceTo(this.targetPos) < 0.001) {
+      const lerpFactor = Math.min(1, delta * this.animSpeed * 1.5);
+      this.mesh.position.lerp(this.targetPos, lerpFactor);
+      if (this.mesh.position.distanceTo(this.targetPos) < 0.002) {
         this.mesh.position.copy(this.targetPos);
         this.targetPos = null;
       }

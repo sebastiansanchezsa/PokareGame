@@ -88,13 +88,27 @@ export class Table {
     }
 
     const woodTex = this.generateWoodTexture(512, 256);
+    woodTex.wrapS = THREE.RepeatWrapping;
+    woodTex.wrapT = THREE.RepeatWrapping;
     const extrudeSettings = { depth: 0.08, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 3 };
     const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+
+    // Normalize UVs from shape space (-2..2, -1.2..1.2) to 0..1
+    const uvAttr = geo.attributes.uv;
+    for (let i = 0; i < uvAttr.count; i++) {
+      let u = uvAttr.getX(i);
+      let v = uvAttr.getY(i);
+      u = (u + 2.0) / 4.0;
+      v = (v + 1.2) / 2.4;
+      uvAttr.setXY(i, u, v);
+    }
+    uvAttr.needsUpdate = true;
+
     const mat = new THREE.MeshStandardMaterial({
       map: woodTex,
-      color: 0x5a3518,
-      roughness: 0.45,
-      metalness: 0.1,
+      color: 0x8a5a30,
+      roughness: 0.4,
+      metalness: 0.08,
     });
 
     const tableTop = new THREE.Mesh(geo, mat);
@@ -276,7 +290,7 @@ export class Table {
     positions.push({
       seat: new THREE.Vector3(0, 0.96, 1.35),
       lookAt: new THREE.Vector3(0, 0.96, 0),
-      cardPos: new THREE.Vector3(0, 0.965, 0.85),
+      cardPos: new THREE.Vector3(0, 0.955, 0.85),
       betPos: new THREE.Vector3(0, 0.96, 0.55),
       angle: 0,
     });
@@ -290,7 +304,7 @@ export class Table {
       positions.push({
         seat: new THREE.Vector3(x, 0.96, z),
         lookAt: new THREE.Vector3(0, 0.96, 0),
-        cardPos: new THREE.Vector3(x * 0.7, 0.965, z * 0.7),
+        cardPos: new THREE.Vector3(x * 0.7, 0.955, z * 0.7),
         betPos: new THREE.Vector3(x * 0.45, 0.96, z * 0.45),
         angle: angle,
       });
@@ -304,7 +318,7 @@ export class Table {
     const positions = [];
     const startX = -0.5;
     for (let i = 0; i < 5; i++) {
-      positions.push(new THREE.Vector3(startX + i * 0.25, 0.965, -0.1));
+      positions.push(new THREE.Vector3(startX + i * 0.25, 0.955, -0.1));
     }
     return positions;
   }

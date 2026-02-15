@@ -361,98 +361,103 @@
       </div>
     </div>
 
-    <!-- Shop overlay -->
+    <!-- Shop overlay (Fortnite-style) -->
     <div id="shop-overlay" class="menu-screen hidden">
-      <h2 class="section-title">TIENDA POKARE</h2>
-      <div class="shop-header">
-        <div class="shop-balance-box">
-          <span class="shop-balance-icon">$</span>
-          <span id="shop-balance">0</span>
-          <span class="shop-balance-label">fichas</span>
+      <div class="shop-layout">
+        <!-- Left: Preview panel -->
+        <div class="shop-preview-panel">
+          <div class="shop-preview-header">
+            <h2 class="shop-preview-title" id="shop-preview-title">TIENDA POKARE</h2>
+            <div class="shop-preview-rarity" id="shop-preview-rarity">SELECCIONA UN ITEM</div>
+          </div>
+          <canvas id="shop-preview-canvas" width="400" height="400"></canvas>
+          <div class="shop-preview-info">
+            <div class="shop-preview-name" id="shop-preview-name">---</div>
+            <div class="shop-preview-desc" id="shop-preview-desc">Haz click en un item para ver la vista previa</div>
+          </div>
+          <div class="shop-preview-actions">
+            <div class="shop-balance-box">
+              <span class="shop-balance-icon">$</span>
+              <span id="shop-balance">0</span>
+              <span class="shop-balance-label">fichas</span>
+            </div>
+            <button class="shop-buy-btn" id="shop-buy-btn" disabled>COMPRAR</button>
+          </div>
+        </div>
+        <!-- Right: Items grid -->
+        <div class="shop-items-panel">
+          <div class="shop-tabs">
+            <button class="shop-tab active" data-tab="all">Todo</button>
+            <button class="shop-tab" data-tab="card">Dorsos</button>
+            <button class="shop-tab" data-tab="table">Mesas</button>
+            <button class="shop-tab" data-tab="emote">Emotes</button>
+            <button class="shop-tab" data-tab="chip">Fichas</button>
+          </div>
+          <div class="shop-grid" id="shop-grid">
+            <div class="shop-item" data-item="card-gold" data-price="5000" data-cat="card" data-desc="Dorso de carta con acabado dorado premium" data-rarity="RARO">
+              <div class="shop-item-preview" style="background:linear-gradient(135deg,#ffd700,#ff8c00)">&#9824;</div>
+              <span class="shop-item-name">Dorso Dorado</span>
+              <span class="shop-item-price">$5,000</span>
+            </div>
+            <div class="shop-item" data-item="card-neon" data-price="3000" data-cat="card" data-desc="Dorso con estilo neón retrowave" data-rarity="COMUN">
+              <div class="shop-item-preview" style="background:linear-gradient(135deg,#ff6ec7,#7b2ff7)">&#9829;</div>
+              <span class="shop-item-name">Dorso Neón</span>
+              <span class="shop-item-price">$3,000</span>
+            </div>
+            <div class="shop-item" data-item="card-skull" data-price="4000" data-cat="card" data-desc="Dorso oscuro con calavera intimidante" data-rarity="RARO">
+              <div class="shop-item-preview" style="background:linear-gradient(135deg,#333,#880000)">&#9760;</div>
+              <span class="shop-item-name">Dorso Skull</span>
+              <span class="shop-item-price">$4,000</span>
+            </div>
+            <div class="shop-item" data-item="card-royal" data-price="7000" data-cat="card" data-desc="Dorso de la realeza con detalles dorados" data-rarity="EPICO">
+              <div class="shop-item-preview" style="background:linear-gradient(135deg,#4a0080,#c8a84e)">&#9813;</div>
+              <span class="shop-item-name">Dorso Royal</span>
+              <span class="shop-item-price">$7,000</span>
+            </div>
+            <div class="shop-item" data-item="table-red" data-price="8000" data-cat="table" data-desc="Fieltro rojo elegante para tu mesa" data-rarity="RARO">
+              <div class="shop-item-preview" style="background:linear-gradient(135deg,#8b0000,#ff2255)">&#9830;</div>
+              <span class="shop-item-name">Mesa Roja</span>
+              <span class="shop-item-price">$8,000</span>
+            </div>
+            <div class="shop-item" data-item="table-blue" data-price="8000" data-cat="table" data-desc="Fieltro azul oceánico premium" data-rarity="RARO">
+              <div class="shop-item-preview" style="background:linear-gradient(135deg,#001a66,#00ccff)">&#9827;</div>
+              <span class="shop-item-name">Mesa Azul</span>
+              <span class="shop-item-price">$8,000</span>
+            </div>
+            <div class="shop-item" data-item="table-black" data-price="12000" data-cat="table" data-desc="Mesa negra VIP exclusiva para high rollers" data-rarity="LEGENDARIO">
+              <div class="shop-item-preview" style="background:linear-gradient(135deg,#111,#333)">&#9824;</div>
+              <span class="shop-item-name">Mesa Negra VIP</span>
+              <span class="shop-item-price">$12,000</span>
+            </div>
+            <div class="shop-item" data-item="emote-fire" data-price="1000" data-cat="emote" data-desc="Muestra que estás en racha" data-rarity="COMUN">
+              <div class="shop-item-preview" style="background:linear-gradient(135deg,#ff4500,#ff8c00)">&#128293;</div>
+              <span class="shop-item-name">Emote Fuego</span>
+              <span class="shop-item-price">$1,000</span>
+            </div>
+            <div class="shop-item" data-item="emote-skull" data-price="1500" data-cat="emote" data-desc="Intimidación máxima en la mesa" data-rarity="COMUN">
+              <div class="shop-item-preview" style="background:linear-gradient(135deg,#333,#666)">&#128128;</div>
+              <span class="shop-item-name">Emote Calavera</span>
+              <span class="shop-item-price">$1,500</span>
+            </div>
+            <div class="shop-item" data-item="emote-crown" data-price="2000" data-cat="emote" data-desc="Demuestra quién manda aquí" data-rarity="RARO">
+              <div class="shop-item-preview" style="background:linear-gradient(135deg,#c8a84e,#fff)">&#128081;</div>
+              <span class="shop-item-name">Emote Corona</span>
+              <span class="shop-item-price">$2,000</span>
+            </div>
+            <div class="shop-item" data-item="chip-diamond" data-price="10000" data-cat="chip" data-desc="Fichas de diamante que brillan en la mesa" data-rarity="EPICO">
+              <div class="shop-item-preview" style="background:linear-gradient(135deg,#00bfff,#e0ffff)">&#128142;</div>
+              <span class="shop-item-name">Fichas Diamante</span>
+              <span class="shop-item-price">$10,000</span>
+            </div>
+            <div class="shop-item" data-item="chip-ruby" data-price="15000" data-cat="chip" data-desc="Las fichas más exclusivas del casino" data-rarity="LEGENDARIO">
+              <div class="shop-item-preview" style="background:linear-gradient(135deg,#cc0033,#ff4466)">&#128142;</div>
+              <span class="shop-item-name">Fichas Rubí</span>
+              <span class="shop-item-price">$15,000</span>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="shop-tabs">
-        <button class="shop-tab active" data-tab="all">Todo</button>
-        <button class="shop-tab" data-tab="card">Dorsos</button>
-        <button class="shop-tab" data-tab="table">Mesas</button>
-        <button class="shop-tab" data-tab="emote">Emotes</button>
-        <button class="shop-tab" data-tab="chip">Fichas</button>
-      </div>
-      <div class="shop-grid" id="shop-grid">
-        <div class="shop-item" data-item="card-gold" data-price="5000" data-cat="card">
-          <div class="shop-item-preview" style="background:linear-gradient(135deg,#ffd700,#ff8c00)">&#9824;</div>
-          <span class="shop-item-name">Dorso Dorado</span>
-          <span class="shop-item-price">$5,000</span>
-          <button class="shop-item-btn">COMPRAR</button>
-        </div>
-        <div class="shop-item" data-item="card-neon" data-price="3000" data-cat="card">
-          <div class="shop-item-preview" style="background:linear-gradient(135deg,#ff6ec7,#7b2ff7)">&#9829;</div>
-          <span class="shop-item-name">Dorso Neón</span>
-          <span class="shop-item-price">$3,000</span>
-          <button class="shop-item-btn">COMPRAR</button>
-        </div>
-        <div class="shop-item" data-item="card-skull" data-price="4000" data-cat="card">
-          <div class="shop-item-preview" style="background:linear-gradient(135deg,#333,#880000)">&#9760;</div>
-          <span class="shop-item-name">Dorso Skull</span>
-          <span class="shop-item-price">$4,000</span>
-          <button class="shop-item-btn">COMPRAR</button>
-        </div>
-        <div class="shop-item" data-item="card-royal" data-price="7000" data-cat="card">
-          <div class="shop-item-preview" style="background:linear-gradient(135deg,#4a0080,#c8a84e)">&#9813;</div>
-          <span class="shop-item-name">Dorso Royal</span>
-          <span class="shop-item-price">$7,000</span>
-          <button class="shop-item-btn">COMPRAR</button>
-        </div>
-        <div class="shop-item" data-item="table-red" data-price="8000" data-cat="table">
-          <div class="shop-item-preview" style="background:linear-gradient(135deg,#8b0000,#ff2255)">&#9830;</div>
-          <span class="shop-item-name">Mesa Roja</span>
-          <span class="shop-item-price">$8,000</span>
-          <button class="shop-item-btn">COMPRAR</button>
-        </div>
-        <div class="shop-item" data-item="table-blue" data-price="8000" data-cat="table">
-          <div class="shop-item-preview" style="background:linear-gradient(135deg,#001a66,#00ccff)">&#9827;</div>
-          <span class="shop-item-name">Mesa Azul</span>
-          <span class="shop-item-price">$8,000</span>
-          <button class="shop-item-btn">COMPRAR</button>
-        </div>
-        <div class="shop-item" data-item="table-black" data-price="12000" data-cat="table">
-          <div class="shop-item-preview" style="background:linear-gradient(135deg,#111,#333)">&#9824;</div>
-          <span class="shop-item-name">Mesa Negra VIP</span>
-          <span class="shop-item-price">$12,000</span>
-          <button class="shop-item-btn">COMPRAR</button>
-        </div>
-        <div class="shop-item" data-item="emote-fire" data-price="1000" data-cat="emote">
-          <div class="shop-item-preview" style="background:linear-gradient(135deg,#ff4500,#ff8c00)">&#128293;</div>
-          <span class="shop-item-name">Emote Fuego</span>
-          <span class="shop-item-price">$1,000</span>
-          <button class="shop-item-btn">COMPRAR</button>
-        </div>
-        <div class="shop-item" data-item="emote-skull" data-price="1500" data-cat="emote">
-          <div class="shop-item-preview" style="background:linear-gradient(135deg,#333,#666)">&#128128;</div>
-          <span class="shop-item-name">Emote Calavera</span>
-          <span class="shop-item-price">$1,500</span>
-          <button class="shop-item-btn">COMPRAR</button>
-        </div>
-        <div class="shop-item" data-item="emote-crown" data-price="2000" data-cat="emote">
-          <div class="shop-item-preview" style="background:linear-gradient(135deg,#c8a84e,#fff)">&#128081;</div>
-          <span class="shop-item-name">Emote Corona</span>
-          <span class="shop-item-price">$2,000</span>
-          <button class="shop-item-btn">COMPRAR</button>
-        </div>
-        <div class="shop-item" data-item="chip-diamond" data-price="10000" data-cat="chip">
-          <div class="shop-item-preview" style="background:linear-gradient(135deg,#00bfff,#e0ffff)">&#128142;</div>
-          <span class="shop-item-name">Fichas Diamante</span>
-          <span class="shop-item-price">$10,000</span>
-          <button class="shop-item-btn">COMPRAR</button>
-        </div>
-        <div class="shop-item" data-item="chip-ruby" data-price="15000" data-cat="chip">
-          <div class="shop-item-preview" style="background:linear-gradient(135deg,#cc0033,#ff4466)">&#128142;</div>
-          <span class="shop-item-name">Fichas Rubí</span>
-          <span class="shop-item-price">$15,000</span>
-          <button class="shop-item-btn">COMPRAR</button>
-        </div>
-      </div>
-      <div class="setup-buttons">
+      <div class="setup-buttons" style="margin-top:8px">
         <button class="neon-btn secondary" id="btn-shop-back">VOLVER</button>
       </div>
     </div>

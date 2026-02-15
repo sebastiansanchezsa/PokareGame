@@ -66,7 +66,7 @@ function init() {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.9;
+  renderer.toneMappingExposure = 1.5;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
 
   scene = new THREE.Scene();
@@ -169,10 +169,14 @@ function setupMenuUI() {
     audioManager.init(); audioManager.playSound('click');
     updateShopBalance();
     showScreen('shop-overlay');
+    initShopPreview();
+    renderShopPreview();
   });
 
   document.getElementById('btn-shop-back').addEventListener('click', () => {
     audioManager.playSound('click');
+    if (shopPreviewAnim) { cancelAnimationFrame(shopPreviewAnim); shopPreviewAnim = null; }
+    clearShopPreview();
     showScreen('main-menu');
   });
 
@@ -1071,32 +1075,253 @@ function saveShopState() {
   localStorage.setItem('pokare_equipped', JSON.stringify(shopState.equipped));
 }
 
+// === SHOP 3D PREVIEW ===
+let shopPreviewRenderer = null, shopPreviewScene = null, shopPreviewCamera = null;
+let shopPreviewMesh = null, shopPreviewAnim = null;
+let shopSelectedItem = null;
+
+function initShopPreview() {
+  const canvas = document.getElementById('shop-preview-canvas');
+  if (!canvas || shopPreviewRenderer) return;
+  shopPreviewRenderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  shopPreviewRenderer.setSize(canvas.width, canvas.height);
+  shopPreviewRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  shopPreviewRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+  shopPreviewRenderer.toneMappingExposure = 1.2;
+
+  shopPreviewScene = new THREE.Scene();
+  shopPreviewCamera = new THREE.PerspectiveCamera(40, 1, 0.1, 10);
+  shopPreviewCamera.position.set(0, 0.3, 2);
+  shopPreviewCamera.lookAt(0, 0, 0);
+
+  const amb = new THREE.AmbientLight(0x554466, 1.5);
+  shopPreviewScene.add(amb);
+  const key = new THREE.PointLight(0xff6ec7, 2, 8);
+  key.position.set(2, 2, 2);
+  shopPreviewScene.add(key);
+  const fill = new THREE.PointLight(0x44aaff, 1.2, 8);
+  fill.position.set(-2, 1, 1);
+  shopPreviewScene.add(fill);
+}
+
+function renderShopPreview() {
+  if (!shopPreviewRenderer) return;
+  if (shopPreviewMesh) {
+    shopPreviewMesh.rotation.y += 0.012;
+  }
+  shopPreviewRenderer.render(shopPreviewScene, shopPreviewCamera);
+  if (document.getElementById('shop-overlay') && !document.getElementById('shop-overlay').classList.contains('hidden')) {
+    shopPreviewAnim = requestAnimationFrame(renderShopPreview);
+  }
+}
+
+function clearShopPreview() {
+  if (shopPreviewMesh) {
+    shopPreviewScene.remove(shopPreviewMesh);
+    shopPreviewMesh.traverse(c => {
+      if (c.geometry) c.geometry.dispose();
+      if (c.material) {
+        if (c.material.map) c.material.map.dispose();
+        c.material.dispose();
+      }
+    });
+    shopPreviewMesh = null;
+  }
+}
+
+function buildPreviewObject(itemId) {
+  clearShopPreview();
+  const cat = itemId.split('-')[0];
+  const variant = itemId.split('-')[1];
+  const group = new THREE.Group();
+
+  if (cat === 'card') {
+    // Show a card back with the cosmetic style
+    const colors = { gold: [0xffd700, 0xff8c00], neon: [0xff6ec7, 0x7b2ff7], skull: [0x333333, 0x880000], royal: [0x4a0080, 0xc8a84e] };
+    const [c1, c2] = colors[variant] || [0xffffff, 0xaaaaaa];
+    const canvas = document.createElement('canvas');
+    canvas.width = 180; canvas.height = 260;
+    const ctx = canvas.getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, 180, 260);
+    grad.addColorStop(0, '#' + c1.toString(16).padStart(6, '0'));
+    grad.addColorStop(1, '#' + c2.toString(16).padStart(6, '0'));
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 180, 260);
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(8, 8, 164, 244);
+    ctx.strokeRect(14, 14, 152, 232);
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.beginPath(); ctx.moveTo(90, 80); ctx.lineTo(120, 130); ctx.lineTo(90, 180); ctx.lineTo(60, 130); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.font = 'bold 18px Arial'; ctx.textAlign = 'center'; ctx.fillText('POKARE', 90, 135);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const geo = new THREE.BoxGeometry(0.7, 0.01, 1);
+    const mat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.4 });
+    const edgeMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.5 });
+    const mesh = new THREE.Mesh(geo, [edgeMat, edgeMat, mat, mat, edgeMat, edgeMat]);
+    mesh.rotation.x = -0.3;
+    group.add(mesh);
+  } else if (cat === 'table') {
+    // Show a mini felt oval
+    const feltColors = { red: 0xaa1122, blue: 0x1144aa, black: 0x222222 };
+    const shape = new THREE.Shape();
+    for (let i = 0; i <= 64; i++) {
+      const a = (i / 64) * Math.PI * 2;
+      const x = Math.cos(a) * 0.7; const y = Math.sin(a) * 0.4;
+      if (i === 0) shape.moveTo(x, y); else shape.lineTo(x, y);
+    }
+    const geo = new THREE.ShapeGeometry(shape);
+    const mat = new THREE.MeshStandardMaterial({ color: feltColors[variant] || 0x1a8a40, roughness: 0.9 });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.rotation.x = -Math.PI / 3;
+    mesh.position.y = -0.1;
+    group.add(mesh);
+    // Rail
+    const curve = new THREE.EllipseCurve(0, 0, 0.75, 0.45, 0, Math.PI * 2);
+    const pts = curve.getPoints(64);
+    const path = new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(p.x, 0, p.y)));
+    path.closed = true;
+    const railGeo = new THREE.TubeGeometry(path, 64, 0.03, 8, true);
+    const railMat = new THREE.MeshStandardMaterial({ color: 0x3a1810, roughness: 0.6 });
+    const rail = new THREE.Mesh(railGeo, railMat);
+    rail.rotation.x = -Math.PI / 3;
+    rail.position.y = -0.1;
+    group.add(rail);
+  } else if (cat === 'emote') {
+    // Show emoji on a floating card
+    const emojis = { fire: '\u{1F525}', skull: '\u{1F480}', crown: '\u{1F451}' };
+    const canvas = document.createElement('canvas');
+    canvas.width = 200; canvas.height = 200;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#1a0a2a';
+    ctx.beginPath(); ctx.arc(100, 100, 90, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#ff6ec7';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(100, 100, 88, 0, Math.PI * 2); ctx.stroke();
+    ctx.font = '72px serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(emojis[variant] || '?', 100, 100);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const geo = new THREE.PlaneGeometry(0.8, 0.8);
+    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
+    const mesh = new THREE.Mesh(geo, mat);
+    group.add(mesh);
+  } else if (cat === 'chip') {
+    // Show a spinning chip
+    const chipColors = { diamond: [0x00bfff, '#00bfff'], ruby: [0xcc0033, '#cc0033'] };
+    const [hex, css] = chipColors[variant] || [0xe74c3c, '#e74c3c'];
+    const canvas = document.createElement('canvas');
+    canvas.width = 256; canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+    const r = 128;
+    ctx.beginPath(); ctx.arc(r, r, r - 4, 0, Math.PI * 2);
+    ctx.fillStyle = css; ctx.fill();
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.arc(r, r, r - 5, a, a + 0.12);
+      ctx.arc(r, r, r - 20, a + 0.12, a, true);
+      ctx.closePath();
+      ctx.fillStyle = i % 3 === 0 ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.2)';
+      ctx.fill();
+    }
+    ctx.beginPath(); ctx.arc(r, r, r * 0.48, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.15)'; ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 48px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('$', r, r);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const geo = new THREE.CylinderGeometry(0.4, 0.4, 0.06, 32);
+    const mat = new THREE.MeshStandardMaterial({ color: hex, roughness: 0.25, metalness: 0.5, map: tex });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.rotation.x = 0.3;
+    group.add(mesh);
+  }
+
+  shopPreviewMesh = group;
+  shopPreviewScene.add(group);
+}
+
+function selectShopItem(itemEl) {
+  document.querySelectorAll('.shop-item').forEach(i => i.classList.remove('selected'));
+  itemEl.classList.add('selected');
+
+  const id = itemEl.dataset.item;
+  const price = parseInt(itemEl.dataset.price);
+  const name = itemEl.querySelector('.shop-item-name').textContent;
+  const desc = itemEl.dataset.desc || '';
+  const rarity = itemEl.dataset.rarity || '';
+  const category = id.split('-')[0];
+
+  shopSelectedItem = { id, price, name, category };
+
+  document.getElementById('shop-preview-name').textContent = name;
+  document.getElementById('shop-preview-desc').textContent = desc;
+  const rarEl = document.getElementById('shop-preview-rarity');
+  rarEl.textContent = rarity;
+  rarEl.className = 'shop-preview-rarity ' + rarity;
+
+  const buyBtn = document.getElementById('shop-buy-btn');
+  buyBtn.disabled = false;
+  buyBtn.className = 'shop-buy-btn';
+
+  if (shopState.owned.includes(id)) {
+    if (shopState.equipped[category] === id) {
+      buyBtn.textContent = 'EQUIPADO';
+      buyBtn.classList.add('equipped');
+      buyBtn.disabled = true;
+    } else {
+      buyBtn.textContent = 'EQUIPAR';
+      buyBtn.classList.add('owned');
+    }
+  } else {
+    buyBtn.textContent = `COMPRAR - $${price.toLocaleString()}`;
+  }
+
+  buildPreviewObject(id);
+}
+
 function updateShopBalance() {
   const el = document.getElementById('shop-balance');
   if (el) el.textContent = shopState.coins.toLocaleString();
 
   document.querySelectorAll('.shop-item').forEach(item => {
     const id = item.dataset.item;
-    const btn = item.querySelector('.shop-item-btn');
     const category = id.split('-')[0];
-
     item.classList.remove('owned', 'equipped');
-
     if (shopState.owned.includes(id)) {
       item.classList.add('owned');
-      if (shopState.equipped[category] === id) {
-        item.classList.add('equipped');
-        if (btn) btn.textContent = 'EQUIPADO';
-      } else {
-        if (btn) btn.textContent = 'EQUIPAR';
-      }
-    } else {
-      if (btn) btn.textContent = 'COMPRAR';
+      if (shopState.equipped[category] === id) item.classList.add('equipped');
     }
   });
+
+  // Update buy button if item selected
+  if (shopSelectedItem) {
+    const buyBtn = document.getElementById('shop-buy-btn');
+    const { id, price, category } = shopSelectedItem;
+    buyBtn.disabled = false;
+    buyBtn.className = 'shop-buy-btn';
+    if (shopState.owned.includes(id)) {
+      if (shopState.equipped[category] === id) {
+        buyBtn.textContent = 'EQUIPADO';
+        buyBtn.classList.add('equipped');
+        buyBtn.disabled = true;
+      } else {
+        buyBtn.textContent = 'EQUIPAR';
+        buyBtn.classList.add('owned');
+      }
+    } else {
+      buyBtn.textContent = `COMPRAR - $${price.toLocaleString()}`;
+    }
+  }
 }
 
 function setupShopUI() {
+  initShopPreview();
+
   // Tab filtering
   document.querySelectorAll('.shop-tab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -1104,47 +1329,43 @@ function setupShopUI() {
       tab.classList.add('active');
       const cat = tab.dataset.tab;
       document.querySelectorAll('.shop-item').forEach(item => {
-        if (cat === 'all' || item.dataset.cat === cat) {
-          item.style.display = '';
-        } else {
-          item.style.display = 'none';
-        }
+        item.style.display = (cat === 'all' || item.dataset.cat === cat) ? '' : 'none';
       });
     });
   });
 
-  // Buy / Equip via button
-  document.querySelectorAll('.shop-item-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const item = btn.closest('.shop-item');
-      const id = item.dataset.item;
-      const price = parseInt(item.dataset.price);
-      const category = id.split('-')[0];
+  // Item selection (click item to preview)
+  document.querySelectorAll('.shop-item').forEach(item => {
+    item.addEventListener('click', () => {
+      selectShopItem(item);
+      audioManager.playSound('click');
+    });
+  });
 
-      if (shopState.owned.includes(id)) {
-        // Equip
-        shopState.equipped[category] = id;
-        saveShopState();
-        updateShopBalance();
-        showMessage(`Equipado: ${item.querySelector('.shop-item-name').textContent}`);
-        audioManager.playSound('click');
-        return;
-      }
-      if (shopState.coins < price) {
-        showMessage('Fichas insuficientes');
-        btn.style.animation = 'shake 0.3s';
-        setTimeout(() => btn.style.animation = '', 300);
-        return;
-      }
-      shopState.coins -= price;
-      shopState.owned.push(id);
+  // Buy / Equip button
+  document.getElementById('shop-buy-btn').addEventListener('click', () => {
+    if (!shopSelectedItem) return;
+    const { id, price, name, category } = shopSelectedItem;
+
+    if (shopState.owned.includes(id)) {
       shopState.equipped[category] = id;
       saveShopState();
       updateShopBalance();
-      showMessage(`Comprado: ${item.querySelector('.shop-item-name').textContent}`);
-      audioManager.playSound('win');
-    });
+      showMessage(`Equipado: ${name}`);
+      audioManager.playSound('click');
+      return;
+    }
+    if (shopState.coins < price) {
+      showMessage('Fichas insuficientes');
+      return;
+    }
+    shopState.coins -= price;
+    shopState.owned.push(id);
+    shopState.equipped[category] = id;
+    saveShopState();
+    updateShopBalance();
+    showMessage(`Comprado: ${name}`);
+    audioManager.playSound('win');
   });
 }
 

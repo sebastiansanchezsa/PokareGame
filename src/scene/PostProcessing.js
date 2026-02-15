@@ -102,7 +102,7 @@ export class PostProcessing {
       uniforms: {
         tDiffuse: { value: null },
         tBloom: { value: null },
-        bloomStrength: { value: 0.9 },
+        bloomStrength: { value: 0.5 },
         time: { value: 0 },
         vhsEnabled: { value: 1.0 },
         chromaticAberration: { value: 0.002 },
