@@ -56,9 +56,23 @@ export class Lighting {
     this.scene.add(rightFill);
 
     // Ceiling bounce light for overall brightness
-    const ceilingBounce = new THREE.PointLight(0xffddcc, 1.4, 16);
+    const ceilingBounce = new THREE.PointLight(0xffddcc, 1.8, 18);
     ceilingBounce.position.set(0, 3.8, 0);
     this.scene.add(ceilingBounce);
+
+    // Strong directional light aimed at table area
+    const dirLight = new THREE.DirectionalLight(0xffeedd, 1.5);
+    dirLight.position.set(0, 4, 1);
+    dirLight.target.position.set(0, 0.9, 0);
+    this.scene.add(dirLight);
+    this.scene.add(dirLight.target);
+
+    // Table spotlight from above
+    const tableSpot = new THREE.SpotLight(0xfff5e6, 2.5, 8, Math.PI / 3.5, 0.4, 0.6);
+    tableSpot.position.set(0, 3.5, 0);
+    tableSpot.target.position.set(0, 0.9, 0);
+    this.scene.add(tableSpot);
+    this.scene.add(tableSpot.target);
 
     // Extra corner fills to illuminate dark areas
     const cornerFL = new THREE.PointLight(0xffccaa, 0.8, 8);

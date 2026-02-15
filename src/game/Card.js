@@ -56,12 +56,12 @@ export class Card3D {
     const backTexture = new THREE.CanvasTexture(backCanvas);
     backTexture.minFilter = THREE.LinearFilter;
 
-    const edgeMat = new THREE.MeshStandardMaterial({ color: 0xd8d4cc, roughness: 0.7, metalness: 0.0 });
+    const edgeMat = new THREE.MeshStandardMaterial({ color: 0x888880, roughness: 0.85, metalness: 0.0 });
     const materials = [
       edgeMat, // right
       edgeMat, // left
-      new THREE.MeshStandardMaterial({ map: frontTexture, roughness: 0.65, metalness: 0.0, color: 0xdddddd }), // top (face)
-      new THREE.MeshStandardMaterial({ map: backTexture, roughness: 0.6, metalness: 0.0, color: 0xdddddd }), // bottom (back)
+      new THREE.MeshStandardMaterial({ map: frontTexture, roughness: 0.82, metalness: 0.0, color: 0x999999 }), // top (face)
+      new THREE.MeshStandardMaterial({ map: backTexture, roughness: 0.78, metalness: 0.0, color: 0x999999 }), // bottom (back)
       edgeMat, // front
       edgeMat, // back
     ];

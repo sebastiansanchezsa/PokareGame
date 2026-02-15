@@ -364,12 +364,12 @@ export class BotModels {
     });
 
     // === POSITION AT TABLE ===
-    // Place model so chest/torso is at table edge height (~0.9)
-    // Local torso Y is 0.58, so offset = 0.9 - 0.58 = 0.32
+    // Place model so belt (local Y ~0.32) aligns with table edge (~0.88)
+    // group.y = 0.88 - 0.32 = 0.56
     const seatPos = pos.seat;
-    group.position.set(seatPos.x, 0.32, seatPos.z);
-    // Face toward table center (0,0,0)
-    group.lookAt(0, 0.32, 0);
+    group.position.set(seatPos.x, 0.56, seatPos.z);
+    // Only rotate around Y axis to face table center — DO NOT use lookAt
+    group.rotation.y = Math.atan2(-seatPos.x, -seatPos.z);
 
     // === NAME TAG ===
     const nameSprite = this.createNameTag(name, neonColor);
