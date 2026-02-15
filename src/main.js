@@ -486,15 +486,18 @@ function startSinglePlayer() {
   gameMode = 'single';
   showScreen('game-hud');
   document.getElementById('chat-box').style.display = 'none';
-  document.getElementById('abilities-bar').style.display = 'none';
+  document.getElementById('abilities-bar').style.display = 'flex'; // abilities enabled in SP too
   document.getElementById('room-code-hud').style.display = 'none';
   document.getElementById('hud-player-name').textContent = 'TÚ';
+  document.getElementById('streak-counter').style.display = 'block';
 
   gameManager.configure(settings);
   gameManager.onStateChange = updateHUD;
   gameManager.onPlayerTurn = onPlayerTurn;
   gameManager.onRoundEnd = onRoundEnd;
   gameManager.onMessage = showMessage;
+  gameManager.onAbilityResult = onSinglePlayerAbilityResult;
+  gameManager.onStreakUpdate = onStreakUpdate;
 
   gameStarted = true;
   audioManager.init(); audioManager.resume(); audioManager.startMusic();
@@ -505,6 +508,34 @@ function startSinglePlayer() {
     const botNames = gameManager.players.filter(p => p.isBot).map(p => p.name);
     botModels.createBots(positions, botNames);
   }, 500);
+}
+
+function onSinglePlayerAbilityResult(msg) {
+  if (msg.ability === 'peek' && msg.card) {
+    showPeekCard(msg.card);
+  } else if (msg.ability === 'intimidate') {
+    const suitSym = msg.suit === 'hearts' ? '♥' : msg.suit === 'diamonds' ? '♦' : msg.suit === 'clubs' ? '♣' : '♠';
+    showMessage(`${msg.targetName} tiene una carta de ${suitSym}`);
+    showAbilityEffect(`${msg.targetName}: ${suitSym}`);
+  } else if (msg.ability === 'swap' && msg.newCards) {
+    showMessage('¡Carta cambiada!');
+    updateMiniCards(msg.newCards);
+    showAbilityEffect('🔄 ¡CAMBIO!');
+  }
+}
+
+function onStreakUpdate(streak, won, played) {
+  const el = document.getElementById('streak-value');
+  if (!el) return;
+  if (streak >= 2) {
+    el.textContent = `🔥 x${streak}`;
+    el.className = streak >= 5 ? 'streak-epic' : streak >= 3 ? 'streak-hot' : 'streak-warm';
+  } else {
+    el.textContent = '';
+    el.className = '';
+  }
+  const statsEl = document.getElementById('streak-stats');
+  if (statsEl) statsEl.textContent = `${won}W / ${played}P`;
 }
 
 // ===== START MULTIPLAYER GAME =====
@@ -872,10 +903,22 @@ async function triggerRussianRoulette(targetIsSelf) {
 function setupAbilitiesUI() {
   document.querySelectorAll('.ability-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      if (!mpClient || gameMode !== 'multi') return;
       const abilityId = btn.dataset.ability;
       audioManager.playSound('click');
-      mpClient.useAbility(abilityId);
+
+      if (gameMode === 'single') {
+        // Single-player: use GameManager abilities
+        const result = gameManager.useAbility(abilityId);
+        if (!result.success) {
+          showMessage(result.message);
+        } else {
+          showAbilityEffect(`¡${gameManager.abilities[abilityId].name} activado!`);
+          // Update cooldowns display
+          updateAbilityCooldowns(gameManager.getAbilityCooldowns());
+        }
+      } else if (gameMode === 'multi' && mpClient) {
+        mpClient.useAbility(abilityId);
+      }
     });
   });
 }

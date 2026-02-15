@@ -43,11 +43,52 @@ export class GameManager {
     this.animating = false;
     this.animTimer = 0;
 
+    // Abilities system (single-player)
+    this.abilities = {
+      peek: { id: 'peek', name: 'Visión', cost: 100, cooldown: 3 },
+      shield: { id: 'shield', name: 'Escudo', cost: 150, cooldown: 5 },
+      intimidate: { id: 'intimidate', name: 'Intimidar', cost: 75, cooldown: 2 },
+      swap: { id: 'swap', name: 'Cambio', cost: 200, cooldown: 4 },
+      doubledown: { id: 'doubledown', name: 'Doble o Nada', cost: 0, cooldown: 6 },
+    };
+    this.abilityCooldowns = {}; // abilityId -> roundsLeft
+    this.playerShielded = false;
+    this.playerDoubleDown = false;
+
+    // Win streak system
+    this.winStreak = 0;
+    this.totalHandsWon = 0;
+    this.totalHandsPlayed = 0;
+
+    // Bot taunts
+    this.botTaunts = {
+      win: [
+        '¡Demasiado fácil!', '¿Eso es todo?', 'Mejor suerte la próxima vez...',
+        '💀 Sin piedad', 'Gracias por las fichas, amigo',
+        '¡Sigue intentando!', 'Esto fue... patético', '¡Yo soy el rey de esta mesa!',
+      ],
+      lose: [
+        '¡Tuviste suerte!', 'No volverá a pasar...', 'Disfrútalo mientras puedas',
+        '😤 La próxima es mía', 'Buen movimiento... por ahora',
+        'Me la vas a pagar', '¡Eso fue trampa!', 'Principiante con suerte...',
+      ],
+      bigPot: [
+        '¡MADRE MÍA!', '¡Esto se pone caliente! 🔥', '¡TODO O NADA!',
+        '¿Alguien tiene miedo?', '¡El pozo está que arde!',
+      ],
+      allIn: [
+        '¡¿ALL IN?! Estás loco...', 'Esto es personal ahora',
+        '¡VAMOS! A ver quién tiene más...', '😱 No puede ser...',
+      ],
+    };
+
     // Callbacks
     this.onStateChange = null;
     this.onPlayerTurn = null;
     this.onRoundEnd = null;
     this.onMessage = null;
+    this.onAbilityResult = null;
+    this.onStreakUpdate = null;
   }
 
   configure(settings) {
@@ -107,6 +148,14 @@ export class GameManager {
     this.pot = 0;
     this.currentBet = 0;
     this.roundComplete = false;
+    this.playerShielded = false;
+    this.playerDoubleDown = false;
+    this.totalHandsPlayed++;
+
+    // Reduce ability cooldowns
+    for (const aid of Object.keys(this.abilityCooldowns)) {
+      this.abilityCooldowns[aid] = Math.max(0, this.abilityCooldowns[aid] - 1);
+    }
 
     // Reset players
     this.players.forEach(p => {
@@ -372,6 +421,11 @@ export class GameManager {
 
     this.emitStateChange();
 
+    // Big pot taunt when pot grows large
+    if (this.pot > this.settings.startingChips * 0.6 && player.isBot && (action === 'raise' || action === 'allin')) {
+      this.botTaunt('bigPot');
+    }
+
     // Check if only one player remains
     const activePlayers = this.players.filter(p => !p.folded);
     if (activePlayers.length === 1) {
@@ -393,7 +447,101 @@ export class GameManager {
   playerCheck() { this.executeAction(this.players[0], 'check'); }
   playerCall() { this.executeAction(this.players[0], 'call'); }
   playerRaise(amount) { this.executeAction(this.players[0], 'raise', amount); }
-  playerAllIn() { this.executeAction(this.players[0], 'allin'); }
+  playerAllIn() {
+    this.executeAction(this.players[0], 'allin');
+    // Bot taunt on all-in
+    this.botTaunt('allIn');
+  }
+
+  // ===== ABILITIES (single-player) =====
+  useAbility(abilityId) {
+    const ability = this.abilities[abilityId];
+    if (!ability) return { success: false, message: 'Habilidad no encontrada' };
+
+    const player = this.players[0]; // human
+    const cd = this.abilityCooldowns[abilityId] || 0;
+    if (cd > 0) return { success: false, message: `Cooldown: ${cd} rondas` };
+    if (player.chips < ability.cost) return { success: false, message: 'Fichas insuficientes' };
+
+    player.chips -= ability.cost;
+    this.abilityCooldowns[abilityId] = ability.cooldown;
+    this.emitStateChange();
+
+    switch (abilityId) {
+      case 'peek': {
+        const nextIdx = this.communityCards.length;
+        if (nextIdx < 5) {
+          const peekCard = this.deck.peek();
+          if (this.onAbilityResult) this.onAbilityResult({ ability: 'peek', card: peekCard });
+        }
+        break;
+      }
+      case 'shield':
+        this.playerShielded = true;
+        this.emitMessage('🛡 Escudo activado');
+        break;
+      case 'intimidate': {
+        const bots = this.players.filter(p => p.isBot && !p.folded && p.holeCards.length > 0);
+        if (bots.length > 0) {
+          const target = bots[Math.floor(Math.random() * bots.length)];
+          const cardIdx = Math.floor(Math.random() * target.holeCards.length);
+          const suit = target.holeCards[cardIdx].suit;
+          if (this.onAbilityResult) this.onAbilityResult({ ability: 'intimidate', targetName: target.name, suit });
+        }
+        break;
+      }
+      case 'swap': {
+        if (player.holeCards.length > 0) {
+          const oldCard = player.holeCards[0];
+          // Remove old card mesh from scene
+          this.scene.remove(oldCard.mesh);
+          oldCard.dispose();
+          // Deal new card
+          const newCard = this.deck.deal();
+          if (newCard) {
+            player.holeCards[0] = newCard;
+            // Position and show new card
+            const pos = this.positions[0];
+            const offsetX = -0.5 * 0.12;
+            newCard.setPosition(0, 1.5, 0);
+            const targetPos = new THREE.Vector3(pos.cardPos.x + offsetX, pos.cardPos.y, pos.cardPos.z);
+            newCard.animateTo(targetPos, null, 3);
+            newCard.flipUp();
+            this.scene.add(newCard.mesh);
+            this.cardMeshes.push(newCard);
+            // Replace old in cardMeshes
+            const oldIdx = this.cardMeshes.indexOf(oldCard);
+            if (oldIdx >= 0) this.cardMeshes.splice(oldIdx, 1);
+            if (this.onAbilityResult) this.onAbilityResult({ ability: 'swap', newCards: player.holeCards });
+          }
+        }
+        break;
+      }
+      case 'doubledown':
+        this.playerDoubleDown = true;
+        this.emitMessage('⚔ ¡DOBLE O NADA ACTIVADO!');
+        break;
+    }
+
+    return { success: true };
+  }
+
+  getAbilityCooldowns() {
+    return { ...this.abilityCooldowns };
+  }
+
+  // ===== BOT TAUNTS =====
+  botTaunt(category) {
+    const taunts = this.botTaunts[category];
+    if (!taunts || taunts.length === 0) return;
+    const activeBots = this.players.filter(p => p.isBot && !p.folded);
+    if (activeBots.length === 0) return;
+    const bot = activeBots[Math.floor(Math.random() * activeBots.length)];
+    const taunt = taunts[Math.floor(Math.random() * taunts.length)];
+    setTimeout(() => {
+      this.emitMessage(`${bot.name}: "${taunt}"`);
+    }, 800);
+  }
 
   placeBet(player, amount) {
     const actual = Math.min(amount, player.chips);
@@ -508,14 +656,55 @@ export class GameManager {
   endRound(winners, allHands = null) {
     this.roundComplete = true;
 
+    const humanWon = winners.some(w => w.index === 0);
+
+    // Win streak tracking
+    if (humanWon) {
+      this.winStreak++;
+      this.totalHandsWon++;
+    } else {
+      this.winStreak = 0;
+    }
+
+    // Calculate streak bonus
+    let streakBonus = 0;
+    let streakLabel = '';
+    if (humanWon && this.winStreak >= 5) {
+      streakBonus = 0.50;
+      streakLabel = '🔥🔥🔥 RACHA x5+ (+50%)';
+    } else if (humanWon && this.winStreak >= 3) {
+      streakBonus = 0.25;
+      streakLabel = '🔥🔥 RACHA x3 (+25%)';
+    } else if (humanWon && this.winStreak >= 2) {
+      streakBonus = 0.10;
+      streakLabel = '🔥 RACHA x2 (+10%)';
+    }
+
+    // Double Down bonus
+    let totalPot = this.pot;
+    if (this.playerDoubleDown) {
+      if (humanWon) {
+        totalPot = Math.floor(totalPot * 2);
+      } else {
+        // Penalty for losing with doubleDown
+        const penalty = Math.min(this.players[0].chips, this.pot);
+        this.players[0].chips -= penalty;
+      }
+    }
+
+    // Apply streak bonus
+    if (streakBonus > 0) {
+      totalPot = Math.floor(totalPot * (1 + streakBonus));
+    }
+
     // Distribute pot
-    const share = Math.floor(this.pot / winners.length);
+    const share = Math.floor(totalPot / winners.length);
     winners.forEach(w => {
       w.chips += share;
     });
 
     const winnerNames = winners.map(w => w.name).join(', ');
-    let detail = `${winnerNames} gana $${this.pot}`;
+    let detail = `${winnerNames} gana $${totalPot}`;
 
     if (allHands) {
       const winnerHand = allHands.find(h => h.player === winners[0]);
@@ -524,8 +713,23 @@ export class GameManager {
       }
     }
 
+    if (streakLabel) detail += ` ${streakLabel}`;
+    if (this.playerDoubleDown && humanWon) detail += ' ⚔ DOBLE!';
+
     this.emitMessage(detail);
     this.emitStateChange();
+
+    // Bot taunt
+    if (humanWon) {
+      this.botTaunt('lose');
+    } else {
+      this.botTaunt('win');
+    }
+
+    // Streak callback
+    if (this.onStreakUpdate) {
+      this.onStreakUpdate(this.winStreak, this.totalHandsWon, this.totalHandsPlayed);
+    }
 
     // Find newly eliminated players
     const eliminated = this.players.filter(p => p.chips <= 0 && !winners.includes(p));
@@ -534,10 +738,13 @@ export class GameManager {
       this.onRoundEnd({
         gameOver: false,
         winners,
-        pot: this.pot,
+        pot: totalPot,
         detail,
         allHands,
         eliminated: eliminated.map(e => ({ name: e.name, index: e.index })),
+        winStreak: this.winStreak,
+        streakBonus: streakLabel,
+        doubleDown: this.playerDoubleDown && humanWon,
       });
     }
   }

@@ -33,6 +33,11 @@ export class Deck {
     }
   }
 
+  peek() {
+    if (this.cards.length === 0) return null;
+    return this.cards[this.cards.length - 1];
+  }
+
   deal() {
     if (this.cards.length === 0) return null;
     const card = this.cards.pop();
