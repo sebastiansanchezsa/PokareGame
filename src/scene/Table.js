@@ -17,10 +17,9 @@ export class Table {
   }
 
   createTableTop() {
-    // Oval poker table shape using ellipse
     const shape = new THREE.Shape();
-    const rx = 2.0; // radius x
-    const ry = 1.2; // radius y
+    const rx = 2.0;
+    const ry = 1.2;
     const segments = 64;
 
     for (let i = 0; i <= segments; i++) {
@@ -34,9 +33,9 @@ export class Table {
     const extrudeSettings = { depth: 0.08, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 3 };
     const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
     const mat = new THREE.MeshStandardMaterial({
-      color: 0x1a0a20,
-      roughness: 0.4,
-      metalness: 0.3,
+      color: 0x2a1008,
+      roughness: 0.5,
+      metalness: 0.15,
     });
 
     const tableTop = new THREE.Mesh(geo, mat);
@@ -47,8 +46,60 @@ export class Table {
     this.group.add(tableTop);
   }
 
+  createFeltTexture() {
+    const w = 1024, h = 600;
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+
+    // Base green felt gradient
+    const grad = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w * 0.6);
+    grad.addColorStop(0, '#1a6b3a');
+    grad.addColorStop(0.7, '#145a2e');
+    grad.addColorStop(1, '#0e4422');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+
+    // Felt noise texture (subtle fiber pattern)
+    for (let i = 0; i < 40000; i++) {
+      const x = Math.random() * w;
+      const y = Math.random() * h;
+      const a = Math.random() * 0.08;
+      ctx.fillStyle = `rgba(${Math.random() > 0.5 ? 255 : 0},${Math.random() > 0.5 ? 255 : 0},${Math.random() > 0.5 ? 255 : 0},${a})`;
+      ctx.fillRect(x, y, 1, 1);
+    }
+
+    // Center oval line (betting area)
+    ctx.strokeStyle = 'rgba(255, 215, 0, 0.12)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(w / 2, h / 2, w * 0.35, h * 0.35, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Dealer spot
+    ctx.beginPath();
+    ctx.arc(w * 0.68, h * 0.7, 14, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // POKARE text watermark
+    ctx.fillStyle = 'rgba(255, 215, 0, 0.04)';
+    ctx.font = 'bold 60px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('POKARE', w / 2, h / 2);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.wrapS = THREE.ClampToEdgeWrapping;
+    tex.wrapT = THREE.ClampToEdgeWrapping;
+    return tex;
+  }
+
   createFelt() {
-    // Green felt surface (slightly above table top)
     const shape = new THREE.Shape();
     const rx = 1.85;
     const ry = 1.05;
@@ -62,11 +113,14 @@ export class Table {
       else shape.lineTo(x, y);
     }
 
+    const feltTex = this.createFeltTexture();
     const geo = new THREE.ShapeGeometry(shape, 64);
     const mat = new THREE.MeshStandardMaterial({
-      color: 0x0a3a20,
-      roughness: 0.85,
+      map: feltTex,
+      color: 0x1a8a40,
+      roughness: 0.92,
       metalness: 0.0,
+      bumpScale: 0.003,
     });
 
     const felt = new THREE.Mesh(geo, mat);
@@ -78,7 +132,6 @@ export class Table {
   }
 
   createTableRail() {
-    // Padded rail around the table
     const curve = new THREE.EllipseCurve(0, 0, 2.05, 1.25, 0, Math.PI * 2, false, 0);
     const points = curve.getPoints(64);
     const path = new THREE.CatmullRomCurve3(
@@ -86,16 +139,27 @@ export class Table {
     );
     path.closed = true;
 
-    const railGeo = new THREE.TubeGeometry(path, 64, 0.06, 8, true);
+    // Padded leather rail
+    const railGeo = new THREE.TubeGeometry(path, 64, 0.065, 12, true);
     const railMat = new THREE.MeshStandardMaterial({
-      color: 0x2a0a2a,
-      roughness: 0.6,
-      metalness: 0.2,
+      color: 0x3a1810,
+      roughness: 0.7,
+      metalness: 0.08,
     });
-
     const rail = new THREE.Mesh(railGeo, railMat);
     rail.castShadow = true;
     this.group.add(rail);
+
+    // Gold trim ring on top of rail
+    const trimGeo = new THREE.TubeGeometry(path, 64, 0.008, 6, true);
+    const trimMat = new THREE.MeshStandardMaterial({
+      color: 0xc8a84e,
+      roughness: 0.2,
+      metalness: 0.8,
+    });
+    const trim = new THREE.Mesh(trimGeo, trimMat);
+    trim.position.y = 0.06;
+    this.group.add(trim);
   }
 
   createTableLegs() {

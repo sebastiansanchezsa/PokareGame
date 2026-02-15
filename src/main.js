@@ -130,7 +130,7 @@ function animate() {
 
 // ===== SCREEN HELPERS =====
 function hideAllScreens() {
-  ['main-menu','bot-setup','settings-screen','profile-setup','mp-lobby','room-waiting','game-hud'].forEach(id => {
+  ['main-menu','bot-setup','settings-screen','profile-setup','mp-lobby','room-waiting','game-hud','shop-overlay'].forEach(id => {
     document.getElementById(id).classList.add('hidden');
   });
 }
@@ -159,6 +159,17 @@ function setupMenuUI() {
   document.getElementById('btn-settings').addEventListener('click', () => {
     audioManager.init(); audioManager.playSound('click');
     showScreen('settings-screen');
+  });
+
+  document.getElementById('btn-shop').addEventListener('click', () => {
+    audioManager.init(); audioManager.playSound('click');
+    updateShopBalance();
+    showScreen('shop-overlay');
+  });
+
+  document.getElementById('btn-shop-back').addEventListener('click', () => {
+    audioManager.playSound('click');
+    showScreen('main-menu');
   });
 
   document.getElementById('btn-back-settings').addEventListener('click', () => {
@@ -808,6 +819,9 @@ function onRoundEnd(result) {
     // If human lost, trigger Russian roulette animation
     if (!humanWon) {
       triggerRussianRoulette(true);
+    } else {
+      // Reward shop coins for winning
+      addShopCoins(Math.floor(result.pot * 0.1));
     }
 
     document.getElementById('btn-next-round').textContent = 'SIGUIENTE MANO';
@@ -872,29 +886,43 @@ function onMultiplayerRoundEnd(result) {
 async function triggerRussianRoulette(targetIsSelf) {
   if (!russianRoulette || russianRoulette.isPlaying || !settings.rouletteEnabled) return;
 
-  // Show overlay
   const overlay = document.getElementById('roulette-overlay');
+  const textEl = document.getElementById('roulette-text');
+  const subEl = document.getElementById('roulette-sub');
   if (overlay) {
     overlay.classList.remove('hidden');
-    document.getElementById('roulette-text').textContent = 'RULETA RUSA...';
+    overlay.style.background = 'rgba(0,0,0,0.75)';
+    textEl.textContent = 'RULETA RUSA';
+    textEl.style.color = '#ff6ec7';
+    if (subEl) subEl.textContent = 'El tambor gira...';
   }
+
+  // Phase text updates during animation
+  setTimeout(() => { if (subEl) subEl.textContent = 'Apuntando...'; }, 1200);
+  setTimeout(() => { if (subEl) subEl.textContent = '...'; }, 3000);
 
   const survived = await russianRoulette.play(targetIsSelf);
 
   if (overlay) {
     if (survived) {
-      document.getElementById('roulette-text').textContent = '¡SOBREVIVISTE!';
-      document.getElementById('roulette-text').style.color = '#00ff88';
+      textEl.textContent = '¡SOBREVIVISTE!';
+      textEl.style.color = '#00ff88';
+      if (subEl) subEl.textContent = 'Click... vacío';
     } else {
-      document.getElementById('roulette-text').textContent = '💀 BANG! 💀';
-      document.getElementById('roulette-text').style.color = '#ff2255';
-      // Screen flash red
-      overlay.style.background = 'rgba(255, 0, 0, 0.4)';
+      textEl.textContent = 'BANG!';
+      textEl.style.color = '#ff2255';
+      overlay.style.background = 'rgba(255, 0, 0, 0.5)';
+      if (subEl) subEl.textContent = 'No tuviste suerte...';
     }
+    // Stop cylinder spinning
+    const rings = overlay.querySelectorAll('.cylinder-ring');
+    rings.forEach(r => r.style.animationPlayState = 'paused');
+
     setTimeout(() => {
       overlay.classList.add('hidden');
       overlay.style.background = '';
-      document.getElementById('roulette-text').style.color = '';
+      textEl.style.color = '';
+      rings.forEach(r => r.style.animationPlayState = 'running');
     }, 2500);
   }
 }
@@ -984,7 +1012,6 @@ function setupChatUI() {
     const text = input.value.trim();
     if (!text || !mpClient) return;
     mpClient.sendChat(text);
-    addChatMessage(userProfile.name, text);
     input.value = '';
   };
 
@@ -1021,5 +1048,181 @@ function showMessage(text) {
   messageTimeout = setTimeout(() => el.classList.remove('visible'), 2000);
 }
 
+// ===== SHOP SYSTEM =====
+const shopState = {
+  coins: parseInt(localStorage.getItem('pokare_coins') || '0'),
+  owned: JSON.parse(localStorage.getItem('pokare_owned') || '[]'),
+  equipped: JSON.parse(localStorage.getItem('pokare_equipped') || '{}'),
+};
+
+function saveShopState() {
+  localStorage.setItem('pokare_coins', shopState.coins.toString());
+  localStorage.setItem('pokare_owned', JSON.stringify(shopState.owned));
+  localStorage.setItem('pokare_equipped', JSON.stringify(shopState.equipped));
+}
+
+function updateShopBalance() {
+  const el = document.getElementById('shop-balance');
+  if (el) el.textContent = shopState.coins;
+  // Mark owned items
+  document.querySelectorAll('.shop-item').forEach(item => {
+    const id = item.dataset.item;
+    if (shopState.owned.includes(id)) {
+      item.classList.add('owned');
+    } else {
+      item.classList.remove('owned');
+    }
+  });
+}
+
+function setupShopUI() {
+  document.querySelectorAll('.shop-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const id = item.dataset.item;
+      const price = parseInt(item.dataset.price);
+      if (shopState.owned.includes(id)) {
+        // Already owned - equip it
+        const category = id.split('-')[0]; // card, table, emote, chip
+        shopState.equipped[category] = id;
+        saveShopState();
+        showMessage(`Equipado: ${item.querySelector('.shop-item-name').textContent}`);
+        audioManager.playSound('click');
+        return;
+      }
+      if (shopState.coins < price) {
+        showMessage('¡Fichas insuficientes!');
+        return;
+      }
+      shopState.coins -= price;
+      shopState.owned.push(id);
+      const category = id.split('-')[0];
+      shopState.equipped[category] = id;
+      saveShopState();
+      updateShopBalance();
+      showMessage(`¡Comprado: ${item.querySelector('.shop-item-name').textContent}!`);
+      audioManager.playSound('win');
+    });
+  });
+}
+
+function addShopCoins(amount) {
+  shopState.coins += amount;
+  saveShopState();
+}
+
+// ===== MUSIC PLAYER / RADIO =====
+const musicPlayer = {
+  audio: null,
+  tracks: [],
+  currentIndex: -1,
+  playing: false,
+};
+
+function setupMusicPlayerUI() {
+  const toggle = document.getElementById('mp-toggle');
+  const panel = document.getElementById('mp-panel');
+  const playBtn = document.getElementById('mp-play');
+  const prevBtn = document.getElementById('mp-prev');
+  const nextBtn = document.getElementById('mp-next');
+  const volSlider = document.getElementById('mp-volume');
+  const fileInput = document.getElementById('mp-file');
+
+  toggle.addEventListener('click', () => {
+    panel.classList.toggle('hidden');
+  });
+
+  fileInput.addEventListener('change', (e) => {
+    const files = Array.from(e.target.files);
+    files.forEach(file => {
+      const url = URL.createObjectURL(file);
+      musicPlayer.tracks.push({ name: file.name.replace(/\.[^.]+$/, ''), url });
+    });
+    if (musicPlayer.tracks.length > 0 && musicPlayer.currentIndex === -1) {
+      musicPlayer.currentIndex = 0;
+      loadTrack(0);
+    }
+    updateMPDisplay();
+  });
+
+  playBtn.addEventListener('click', () => {
+    if (!musicPlayer.audio || musicPlayer.tracks.length === 0) return;
+    if (musicPlayer.playing) {
+      musicPlayer.audio.pause();
+      musicPlayer.playing = false;
+      playBtn.innerHTML = '&#9654;';
+    } else {
+      musicPlayer.audio.play().catch(() => {});
+      musicPlayer.playing = true;
+      playBtn.innerHTML = '&#9646;&#9646;';
+    }
+  });
+
+  prevBtn.addEventListener('click', () => {
+    if (musicPlayer.tracks.length === 0) return;
+    musicPlayer.currentIndex = (musicPlayer.currentIndex - 1 + musicPlayer.tracks.length) % musicPlayer.tracks.length;
+    loadTrack(musicPlayer.currentIndex);
+    if (musicPlayer.playing) musicPlayer.audio.play().catch(() => {});
+    updateMPDisplay();
+  });
+
+  nextBtn.addEventListener('click', () => {
+    if (musicPlayer.tracks.length === 0) return;
+    musicPlayer.currentIndex = (musicPlayer.currentIndex + 1) % musicPlayer.tracks.length;
+    loadTrack(musicPlayer.currentIndex);
+    if (musicPlayer.playing) musicPlayer.audio.play().catch(() => {});
+    updateMPDisplay();
+  });
+
+  volSlider.addEventListener('input', (e) => {
+    if (musicPlayer.audio) musicPlayer.audio.volume = e.target.value / 100;
+  });
+}
+
+function loadTrack(idx) {
+  if (idx < 0 || idx >= musicPlayer.tracks.length) return;
+  if (musicPlayer.audio) { musicPlayer.audio.pause(); musicPlayer.audio.src = ''; }
+  musicPlayer.audio = new Audio(musicPlayer.tracks[idx].url);
+  musicPlayer.audio.volume = (document.getElementById('mp-volume')?.value || 50) / 100;
+  musicPlayer.audio.addEventListener('ended', () => {
+    musicPlayer.currentIndex = (musicPlayer.currentIndex + 1) % musicPlayer.tracks.length;
+    loadTrack(musicPlayer.currentIndex);
+    musicPlayer.audio.play().catch(() => {});
+    updateMPDisplay();
+  });
+  updateMPDisplay();
+}
+
+function updateMPDisplay() {
+  const now = document.getElementById('mp-now');
+  if (!now) return;
+  if (musicPlayer.tracks.length === 0) {
+    now.textContent = 'Sin pista';
+  } else {
+    now.textContent = musicPlayer.tracks[musicPlayer.currentIndex]?.name || 'Sin pista';
+  }
+}
+
+// ===== IMPROVED COOLDOWN DISPLAY =====
+function updateAbilityCooldownsDisplay(cooldowns) {
+  document.querySelectorAll('.ability-btn').forEach(btn => {
+    const id = btn.dataset.ability;
+    const cd = cooldowns[id] || 0;
+    btn.disabled = cd > 0;
+    btn.classList.toggle('on-cooldown', cd > 0);
+    const cdEl = document.getElementById(`cd-${id}`);
+    if (cdEl) {
+      cdEl.textContent = cd > 0 ? `${cd}T` : '';
+    }
+    if (cd > 0) {
+      btn.title = `Cooldown: ${cd} rondas`;
+    }
+  });
+}
+
 // ===== START =====
-init();
+function boot() {
+  init();
+  setupShopUI();
+  setupMusicPlayerUI();
+}
+boot();

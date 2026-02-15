@@ -1141,18 +1141,77 @@ body {
   to { filter: brightness(1.5); }
 }
 
-/* ===== ABILITY COOLDOWN STATE ===== */
-.ability-btn.on-cooldown {
-  opacity: 0.4;
-  filter: grayscale(0.8);
-  pointer-events: none;
-}
-.ability-btn:not(.on-cooldown):hover {
-  transform: scale(1.1);
-  box-shadow: 0 0 15px rgba(255,110,199,0.5);
+/* ===== IMPROVED ABILITIES BAR ===== */
+.abilities-bar {
+  position: fixed;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 80;
 }
 .ability-btn {
-  transition: transform 0.15s, box-shadow 0.15s, opacity 0.3s;
+  position: relative;
+  width: 70px;
+  padding: 8px 4px 6px;
+  border: 1px solid rgba(255,110,199,0.3);
+  border-radius: 12px;
+  background: rgba(10,5,20,0.75);
+  backdrop-filter: blur(12px);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  transition: all 0.2s;
+  overflow: hidden;
+  color: #fff;
+}
+.ability-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(255,110,199,0.08), rgba(0,204,255,0.05));
+  pointer-events: none;
+}
+.ability-icon-wrap {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.ability-icon { font-size: 1.2rem; }
+.ability-name { font-family: 'Rajdhani', sans-serif; font-size: 0.6rem; font-weight: 600; letter-spacing: 0.04em; }
+.ability-cost { font-family: 'Orbitron', sans-serif; font-size: 0.5rem; color: #ffd700; }
+.ability-cd {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.5rem;
+  color: #ff6ec7;
+  font-family: 'Orbitron', sans-serif;
+}
+.ability-peek .ability-icon-wrap { border-color: rgba(0,204,255,0.4); }
+.ability-shield .ability-icon-wrap { border-color: rgba(187,136,255,0.4); }
+.ability-intimidate .ability-icon-wrap { border-color: rgba(255,60,60,0.4); }
+.ability-swap .ability-icon-wrap { border-color: rgba(0,255,136,0.4); }
+.ability-double .ability-icon-wrap { border-color: rgba(255,215,0,0.5); }
+.ability-btn:not(.on-cooldown):hover {
+  transform: scale(1.08);
+  border-color: rgba(255,110,199,0.6);
+  box-shadow: 0 0 18px rgba(255,110,199,0.3);
+}
+.ability-btn.on-cooldown {
+  opacity: 0.35;
+  filter: grayscale(0.7);
+  pointer-events: none;
 }
 
 /* ===== RUSSIAN ROULETTE OVERLAY ===== */
@@ -1164,17 +1223,44 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0,0,0,0.75);
   transition: background 0.3s;
 }
 .roulette-content {
   text-align: center;
   animation: roulettePulse 0.8s ease infinite alternate;
 }
-.roulette-icon {
-  font-size: 6rem;
-  filter: drop-shadow(0 0 20px rgba(255,0,0,0.6));
-  animation: rouletteShake 0.1s linear infinite;
+.roulette-cylinder {
+  width: 120px; height: 120px;
+  margin: 0 auto 1.5rem;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cylinder-ring {
+  position: absolute;
+  width: 100px; height: 100px;
+  border: 3px solid rgba(255,110,199,0.6);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: cylinderSpin 0.6s linear infinite;
+}
+.cylinder-ring.r2 {
+  width: 70px; height: 70px;
+  border-color: rgba(0,204,255,0.5);
+  border-left-color: transparent;
+  animation-duration: 0.4s;
+  animation-direction: reverse;
+}
+.cylinder-ring.r3 {
+  width: 40px; height: 40px;
+  border-color: rgba(255,215,0,0.5);
+  border-bottom-color: transparent;
+  animation-duration: 0.8s;
+}
+@keyframes cylinderSpin {
+  to { transform: rotate(360deg); }
 }
 .roulette-text {
   font-family: 'Orbitron', sans-serif;
@@ -1182,19 +1268,183 @@ body {
   font-weight: 900;
   color: #ff6ec7;
   text-shadow: 0 0 20px rgba(255,110,199,0.8), 0 0 40px rgba(255,0,100,0.4);
-  margin-top: 1rem;
+}
+.roulette-subtitle {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1rem;
+  color: rgba(255,255,255,0.5);
+  margin-top: 0.5rem;
+  letter-spacing: 0.1em;
 }
 @keyframes roulettePulse {
   from { transform: scale(1); }
-  to { transform: scale(1.05); }
-}
-@keyframes rouletteShake {
-  0% { transform: translateX(-2px) rotate(-1deg); }
-  50% { transform: translateX(2px) rotate(1deg); }
-  100% { transform: translateX(-2px) rotate(-1deg); }
+  to { transform: scale(1.03); }
 }
 
-/* ===== RESULT HAND TYPE (hand ranking label) ===== */
+/* ===== MUSIC PLAYER / RADIO ===== */
+.music-player {
+  position: fixed;
+  bottom: 15px;
+  left: 15px;
+  z-index: 90;
+}
+.mp-toggle {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  background: rgba(10,5,20,0.8);
+  border: 1px solid rgba(255,110,199,0.4);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #ff6ec7;
+}
+.mp-toggle:hover {
+  border-color: #ff6ec7;
+  box-shadow: 0 0 12px rgba(255,110,199,0.4);
+  transform: scale(1.1);
+}
+.mp-panel {
+  position: absolute;
+  bottom: 50px;
+  left: 0;
+  width: 220px;
+  background: rgba(10,5,20,0.9);
+  border: 1px solid rgba(255,110,199,0.25);
+  border-radius: 12px;
+  backdrop-filter: blur(16px);
+  padding: 12px;
+}
+.mp-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.65rem;
+  color: #ff6ec7;
+  text-align: center;
+  margin-bottom: 6px;
+  letter-spacing: 0.1em;
+}
+.mp-now {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.7);
+  text-align: center;
+  margin-bottom: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mp-controls {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.mp-btn {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.05);
+  color: #fff;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mp-btn:hover { border-color: #ff6ec7; background: rgba(255,110,199,0.15); }
+.mp-play { width: 40px; height: 40px; font-size: 0.9rem; }
+.mp-vol { width: 100%; margin-bottom: 8px; }
+.mp-upload-label {
+  display: block;
+  text-align: center;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.7rem;
+  color: #00ccff;
+  cursor: pointer;
+  padding: 5px;
+  border: 1px dashed rgba(0,204,255,0.3);
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+.mp-upload-label:hover { border-color: #00ccff; background: rgba(0,204,255,0.08); }
+
+/* ===== SHOP ===== */
+.shop-subtitle {
+  font-family: 'Rajdhani', sans-serif;
+  color: rgba(255,255,255,0.5);
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+.shop-balance {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1rem;
+  color: #ffd700;
+  text-shadow: 0 0 8px rgba(255,215,0,0.4);
+  margin-bottom: 1rem;
+}
+.shop-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  max-width: 680px;
+  margin: 0 auto 1.5rem;
+}
+.shop-item {
+  background: rgba(10,5,20,0.7);
+  border: 1px solid rgba(255,110,199,0.15);
+  border-radius: 12px;
+  padding: 12px 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  backdrop-filter: blur(8px);
+}
+.shop-item:hover {
+  border-color: rgba(255,110,199,0.5);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(255,110,199,0.15);
+}
+.shop-item.owned {
+  border-color: rgba(0,255,136,0.4);
+  opacity: 0.7;
+}
+.shop-item.owned::after {
+  content: '✓';
+  position: absolute;
+  top: 5px; right: 8px;
+  color: #00ff88;
+  font-weight: 900;
+}
+.shop-item-preview {
+  width: 56px; height: 56px;
+  border-radius: 10px;
+  margin: 0 auto 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+.shop-item-name {
+  display: block;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 2px;
+}
+.shop-item-price {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.55rem;
+  color: #ffd700;
+}
+
+/* ===== RESULT HAND TYPE ===== */
 .result-hand-type {
   font-family: 'Orbitron', sans-serif;
   font-size: 0.7rem;
@@ -1219,4 +1469,6 @@ body {
   .abilities-bar { right: 5px; }
   .ability-btn { width: 55px; padding: 0.3rem; }
   .chat-box { width: 200px; }
+  .shop-grid { grid-template-columns: repeat(2, 1fr); }
+  .mp-panel { width: 180px; }
 }

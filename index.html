@@ -20,6 +20,7 @@
       <div class="menu-buttons">
         <button class="neon-btn" id="btn-single">JUGAR VS BOTS</button>
         <button class="neon-btn" id="btn-multi">MULTIJUGADOR</button>
+        <button class="neon-btn" id="btn-shop">TIENDA</button>
         <button class="neon-btn" id="btn-tutorial">TUTORIAL</button>
         <button class="neon-btn" id="btn-settings">OPCIONES</button>
       </div>
@@ -208,20 +209,30 @@
 
       <!-- Abilities bar -->
       <div class="abilities-bar" id="abilities-bar" style="display:none">
-        <button class="ability-btn" data-ability="peek" title="Ve la próxima carta comunitaria ($100)">
-          <span class="ability-icon">&#128065;</span><span class="ability-name">Visión</span><span class="ability-cost">$100</span>
+        <button class="ability-btn ability-peek" data-ability="peek" title="Ve la próxima carta comunitaria ($100)">
+          <div class="ability-icon-wrap"><span class="ability-icon">&#128065;</span></div>
+          <span class="ability-name">Visión</span><span class="ability-cost">$100</span>
+          <div class="ability-cd" id="cd-peek"></div>
         </button>
-        <button class="ability-btn" data-ability="shield" title="Protege tu apuesta de raises ($150)">
-          <span class="ability-icon">&#128737;</span><span class="ability-name">Escudo</span><span class="ability-cost">$150</span>
+        <button class="ability-btn ability-shield" data-ability="shield" title="Protege tu apuesta ($150)">
+          <div class="ability-icon-wrap"><span class="ability-icon">&#128737;</span></div>
+          <span class="ability-name">Escudo</span><span class="ability-cost">$150</span>
+          <div class="ability-cd" id="cd-shield"></div>
         </button>
-        <button class="ability-btn" data-ability="intimidate" title="Revela el palo de una carta del oponente ($75)">
-          <span class="ability-icon">&#128065;</span><span class="ability-name">Intimidar</span><span class="ability-cost">$75</span>
+        <button class="ability-btn ability-intimidate" data-ability="intimidate" title="Revela palo de carta rival ($75)">
+          <div class="ability-icon-wrap"><span class="ability-icon">&#128123;</span></div>
+          <span class="ability-name">Intimidar</span><span class="ability-cost">$75</span>
+          <div class="ability-cd" id="cd-intimidate"></div>
         </button>
-        <button class="ability-btn" data-ability="swap" title="Cambia una carta por una nueva ($200)">
-          <span class="ability-icon">&#128260;</span><span class="ability-name">Cambio</span><span class="ability-cost">$200</span>
+        <button class="ability-btn ability-swap" data-ability="swap" title="Cambia una carta ($200)">
+          <div class="ability-icon-wrap"><span class="ability-icon">&#128260;</span></div>
+          <span class="ability-name">Cambio</span><span class="ability-cost">$200</span>
+          <div class="ability-cd" id="cd-swap"></div>
         </button>
-        <button class="ability-btn" data-ability="doubledown" title="Duplica el pozo si ganas, pierdes el doble si no (GRATIS)">
-          <span class="ability-icon">&#9876;</span><span class="ability-name">Doble</span><span class="ability-cost">GRATIS</span>
+        <button class="ability-btn ability-double" data-ability="doubledown" title="Doble o Nada (GRATIS)">
+          <div class="ability-icon-wrap"><span class="ability-icon">&#9876;&#65039;</span></div>
+          <span class="ability-name">Doble</span><span class="ability-cost">GRATIS</span>
+          <div class="ability-cd" id="cd-doubledown"></div>
         </button>
       </div>
 
@@ -306,8 +317,84 @@
     <!-- Russian Roulette overlay -->
     <div id="roulette-overlay" class="hidden">
       <div class="roulette-content">
-        <div class="roulette-icon">&#128299;</div>
+        <div class="roulette-cylinder">
+          <div class="cylinder-ring"></div>
+          <div class="cylinder-ring r2"></div>
+          <div class="cylinder-ring r3"></div>
+        </div>
         <h2 class="roulette-text" id="roulette-text">RULETA RUSA...</h2>
+        <div class="roulette-subtitle" id="roulette-sub">El tambor gira...</div>
+      </div>
+    </div>
+
+    <!-- Music Player / Radio -->
+    <div class="music-player" id="music-player">
+      <div class="mp-toggle" id="mp-toggle">&#9835;</div>
+      <div class="mp-panel hidden" id="mp-panel">
+        <div class="mp-title">RADIO POKARE</div>
+        <div class="mp-now" id="mp-now">Sin pista</div>
+        <div class="mp-controls">
+          <button class="mp-btn" id="mp-prev">&#9664;&#9664;</button>
+          <button class="mp-btn mp-play" id="mp-play">&#9654;</button>
+          <button class="mp-btn" id="mp-next">&#9654;&#9654;</button>
+        </div>
+        <input type="range" id="mp-volume" min="0" max="100" value="50" class="neon-slider mp-vol">
+        <label class="mp-upload-label">
+          <span>+ Agregar Pista</span>
+          <input type="file" id="mp-file" accept="audio/*" multiple style="display:none">
+        </label>
+      </div>
+    </div>
+
+    <!-- Shop overlay -->
+    <div id="shop-overlay" class="menu-screen hidden">
+      <h2 class="section-title">TIENDA</h2>
+      <p class="shop-subtitle">Gasta tus fichas en cosméticos</p>
+      <div class="shop-balance">Fichas: <span id="shop-balance">0</span></div>
+      <div class="shop-grid" id="shop-grid">
+        <div class="shop-item" data-item="card-gold" data-price="5000">
+          <div class="shop-item-preview" style="background:linear-gradient(135deg,#ffd700,#ff8c00)">&#9824;</div>
+          <span class="shop-item-name">Dorso Dorado</span>
+          <span class="shop-item-price">5000 fichas</span>
+        </div>
+        <div class="shop-item" data-item="card-neon" data-price="3000">
+          <div class="shop-item-preview" style="background:linear-gradient(135deg,#ff6ec7,#7b2ff7)">&#9829;</div>
+          <span class="shop-item-name">Dorso Neón</span>
+          <span class="shop-item-price">3000 fichas</span>
+        </div>
+        <div class="shop-item" data-item="card-skull" data-price="4000">
+          <div class="shop-item-preview" style="background:linear-gradient(135deg,#333,#880000)">&#9760;</div>
+          <span class="shop-item-name">Dorso Skull</span>
+          <span class="shop-item-price">4000 fichas</span>
+        </div>
+        <div class="shop-item" data-item="table-red" data-price="8000">
+          <div class="shop-item-preview" style="background:linear-gradient(135deg,#8b0000,#ff2255)">&#9830;</div>
+          <span class="shop-item-name">Mesa Roja</span>
+          <span class="shop-item-price">8000 fichas</span>
+        </div>
+        <div class="shop-item" data-item="table-blue" data-price="8000">
+          <div class="shop-item-preview" style="background:linear-gradient(135deg,#001a66,#00ccff)">&#9827;</div>
+          <span class="shop-item-name">Mesa Azul</span>
+          <span class="shop-item-price">8000 fichas</span>
+        </div>
+        <div class="shop-item" data-item="emote-fire" data-price="1000">
+          <div class="shop-item-preview" style="background:linear-gradient(135deg,#ff4500,#ff8c00)">&#128293;</div>
+          <span class="shop-item-name">Emote Fuego</span>
+          <span class="shop-item-price">1000 fichas</span>
+        </div>
+        <div class="shop-item" data-item="emote-skull" data-price="1500">
+          <div class="shop-item-preview" style="background:linear-gradient(135deg,#333,#666)">&#128128;</div>
+          <span class="shop-item-name">Emote Calavera</span>
+          <span class="shop-item-price">1500 fichas</span>
+        </div>
+        <div class="shop-item" data-item="chip-diamond" data-price="10000">
+          <div class="shop-item-preview" style="background:linear-gradient(135deg,#00bfff,#e0ffff)">&#128142;</div>
+          <span class="shop-item-name">Fichas Diamante</span>
+          <span class="shop-item-price">10000 fichas</span>
+        </div>
+      </div>
+      <div class="setup-buttons">
+        <button class="neon-btn secondary" id="btn-shop-back">VOLVER</button>
       </div>
     </div>
 
