@@ -5,9 +5,9 @@ export class FPSCamera {
     this.camera = camera;
     this.time = 0;
 
-    // Base position - seated at the table
-    this.basePosition = new THREE.Vector3(0, 1.55, 1.8);
-    this.lookTarget = new THREE.Vector3(0, 0.95, -0.5);
+    // Base position - seated at the table (Z = seat 1.35 + 0.2 head offset)
+    this.basePosition = new THREE.Vector3(0, 1.55, 1.55);
+    this.lookTarget = new THREE.Vector3(0, 1.0, 0);
 
     // Idle breathing parameters
     this.breathAmplitude = 0.008;
@@ -35,13 +35,14 @@ export class FPSCamera {
     this.camera.lookAt(this.lookTarget);
 
     // Mouse move listener for subtle look
-    document.addEventListener('mousemove', (e) => {
+    this._onMouseMove = (e) => {
       if (!this.mouseEnabled) return;
       const nx = (e.clientX / window.innerWidth - 0.5) * 2;
       const ny = (e.clientY / window.innerHeight - 0.5) * 2;
       this.targetLook.x = nx * this.lookRange.x * this.mouseInfluence;
       this.targetLook.y = -ny * this.lookRange.y * this.mouseInfluence;
-    });
+    };
+    document.addEventListener('mousemove', this._onMouseMove);
   }
 
   update(delta) {
@@ -69,5 +70,11 @@ export class FPSCamera {
     const lookX = this.lookTarget.x + this.currentLook.x * 0.5;
     const lookY = this.lookTarget.y + this.currentLook.y * 0.3;
     this.camera.lookAt(lookX, lookY, this.lookTarget.z);
+  }
+
+  dispose() {
+    if (this._onMouseMove) {
+      document.removeEventListener('mousemove', this._onMouseMove);
+    }
   }
 }

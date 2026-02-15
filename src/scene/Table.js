@@ -317,9 +317,12 @@ export class Table {
   }
 
   moveDealerButton(position) {
-    if (this.dealerButton && position) {
-      this.dealerButton.position.x = position.x + 0.15;
-      this.dealerButton.position.z = position.z + 0.1;
-    }
+    if (!this.dealerButton || !position) return;
+    const dir = new THREE.Vector3(position.x, 0, position.z).normalize();
+    this.dealerButton.position.set(
+      position.x - dir.x * 0.18,
+      0.96,
+      position.z - dir.z * 0.18
+    );
   }
 }
