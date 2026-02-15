@@ -159,6 +159,19 @@ function handleMessage(ws, msg) {
       break;
     }
 
+    case 'rouletteEvent': {
+      if (!ws.roomCode || !rooms.has(ws.roomCode)) return;
+      const room = rooms.get(ws.roomCode);
+      room.broadcast({
+        type: 'rouletteEvent',
+        playerId: ws.playerId,
+        phase: msg.phase,
+        survived: msg.survived,
+        victimIndex: msg.victimIndex,
+      });
+      break;
+    }
+
     case 'chatMessage': {
       if (!ws.roomCode || !rooms.has(ws.roomCode)) return;
       const room = rooms.get(ws.roomCode);

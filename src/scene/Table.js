@@ -142,13 +142,6 @@ export class Table {
       ctx.fillRect(x, y, 1, 1);
     }
 
-    // Center oval line (betting area)
-    ctx.strokeStyle = 'rgba(255, 215, 0, 0.12)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.ellipse(w / 2, h / 2, w * 0.35, h * 0.35, 0, 0, Math.PI * 2);
-    ctx.stroke();
-
     // Dealer spot
     ctx.beginPath();
     ctx.arc(w * 0.68, h * 0.7, 14, 0, Math.PI * 2);

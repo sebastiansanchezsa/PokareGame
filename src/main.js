@@ -384,6 +384,19 @@ async function connectToMultiplayer() {
     resultDiv.classList.remove('hidden');
   };
 
+  mpClient.onRouletteEvent = (msg) => {
+    if (msg.phase === 'start' && russianRoulette) {
+      russianRoulette.play(false); // show animation from observer perspective
+    }
+    if (msg.phase === 'result' && !msg.survived) {
+      // Trigger ragdoll on the victim model
+      const renderer = mpRenderer;
+      if (renderer && renderer.playerModels) {
+        renderer.playerModels.triggerRagdoll(msg.victimIndex || 1);
+      }
+    }
+  };
+
   mpClient.onAbilityUsed = (msg) => {
     showAbilityEffect(`${msg.name} usó ${msg.abilityName}!`);
   };
@@ -901,43 +914,58 @@ function onMultiplayerRoundEnd(result) {
 async function triggerRussianRoulette(targetIsSelf) {
   if (!russianRoulette || russianRoulette.isPlaying || !settings.rouletteEnabled) return;
 
-  const overlay = document.getElementById('roulette-overlay');
+  // Small floating text notification - no full-screen overlay
   const textEl = document.getElementById('roulette-text');
   const subEl = document.getElementById('roulette-sub');
+  const overlay = document.getElementById('roulette-overlay');
   if (overlay) {
     overlay.classList.remove('hidden');
-    overlay.style.background = 'rgba(0,0,0,0.75)';
-    textEl.textContent = 'RULETA RUSA';
-    textEl.style.color = '#ff6ec7';
+    overlay.style.background = 'none';
+    overlay.style.pointerEvents = 'none';
+    if (textEl) { textEl.textContent = 'RULETA RUSA'; textEl.style.color = '#ff6ec7'; }
     if (subEl) subEl.textContent = 'El tambor gira...';
   }
 
-  // Phase text updates during animation
   setTimeout(() => { if (subEl) subEl.textContent = 'Apuntando...'; }, 1200);
   setTimeout(() => { if (subEl) subEl.textContent = '...'; }, 3000);
 
+  // Broadcast start to multiplayer
+  if (gameMode === 'multi' && mpClient) {
+    mpClient.sendRouletteEvent('start', null, null);
+  }
+
   const survived = await russianRoulette.play(targetIsSelf);
+
+  // Pick victim for ragdoll
+  let victimIndex = null;
+  if (!survived && botModels && botModels.models.length > 0) {
+    const aliveModels = botModels.models.filter(m => !m.isDead);
+    if (aliveModels.length > 0) {
+      const victim = aliveModels[Math.floor(Math.random() * aliveModels.length)];
+      victimIndex = victim.index;
+    }
+  }
+
+  // Broadcast result to multiplayer
+  if (gameMode === 'multi' && mpClient) {
+    mpClient.sendRouletteEvent('result', survived, victimIndex);
+  }
 
   if (overlay) {
     if (survived) {
-      textEl.textContent = '¡SOBREVIVISTE!';
-      textEl.style.color = '#00ff88';
+      if (textEl) { textEl.textContent = '¡SOBREVIVISTE!'; textEl.style.color = '#00ff88'; }
       if (subEl) subEl.textContent = 'Click... vacío';
     } else {
-      textEl.textContent = 'BANG!';
-      textEl.style.color = '#ff2255';
-      overlay.style.background = 'rgba(255, 0, 0, 0.5)';
+      if (textEl) { textEl.textContent = '¡BANG!'; textEl.style.color = '#ff2255'; }
       if (subEl) subEl.textContent = 'No tuviste suerte...';
+      // Trigger ragdoll on the victim
+      if (victimIndex !== null && botModels) {
+        botModels.triggerRagdoll(victimIndex);
+      }
     }
-    // Stop cylinder spinning
-    const rings = overlay.querySelectorAll('.cylinder-ring');
-    rings.forEach(r => r.style.animationPlayState = 'paused');
 
     setTimeout(() => {
-      overlay.classList.add('hidden');
-      overlay.style.background = '';
-      textEl.style.color = '';
-      rings.forEach(r => r.style.animationPlayState = 'running');
+      if (overlay) overlay.classList.add('hidden');
     }, 2500);
   }
 }

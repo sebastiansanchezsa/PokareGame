@@ -28,6 +28,7 @@ export class MultiplayerClient {
     this.onGameOver = null;
     this.onAbilityUsed = null;
     this.onAbilityResult = null;
+    this.onRouletteEvent = null;
     this.onChat = null;
     this.onMessage = null; // generic error/info messages
   }
@@ -152,6 +153,10 @@ export class MultiplayerClient {
     this.send({ type: 'useAbility', ability: abilityId });
   }
 
+  sendRouletteEvent(phase, survived, victimIndex) {
+    this.send({ type: 'rouletteEvent', phase, survived, victimIndex });
+  }
+
   nextRound() {
     this.send({ type: 'nextRound' });
   }
@@ -236,6 +241,10 @@ export class MultiplayerClient {
 
       case 'abilityResult':
         if (this.onAbilityResult) this.onAbilityResult(msg);
+        break;
+
+      case 'rouletteEvent':
+        if (this.onRouletteEvent) this.onRouletteEvent(msg);
         break;
 
       case 'chat':

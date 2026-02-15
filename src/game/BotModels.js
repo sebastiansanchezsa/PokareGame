@@ -36,32 +36,35 @@ export class BotModels {
     const px = seatPos.x * pushFactor;
     const pz = seatPos.z * pushFactor;
 
-    // Seat cushion
-    const cushionGeo = new THREE.BoxGeometry(0.28, 0.04, 0.28);
+    // World-scale chair: seat at y=0.68, legs to floor
+    const seatHeight = 0.68;
+    const seatW = 0.18, seatD = 0.18;
     const cushionMat = new THREE.MeshStandardMaterial({ color: 0x2a0a1a, roughness: 0.8 });
+    const legMat = new THREE.MeshStandardMaterial({ color: 0x1a0a08, roughness: 0.4, metalness: 0.3 });
+
+    // Seat cushion
+    const cushionGeo = new THREE.BoxGeometry(seatW, 0.025, seatD);
     const cushion = new THREE.Mesh(cushionGeo, cushionMat);
-    cushion.position.y = 0.45;
+    cushion.position.y = seatHeight;
     chair.add(cushion);
 
     // Backrest
-    const backGeo = new THREE.BoxGeometry(0.28, 0.35, 0.04);
-    const backMat = new THREE.MeshStandardMaterial({ color: 0x2a0a1a, roughness: 0.8 });
-    const back = new THREE.Mesh(backGeo, backMat);
-    back.position.set(0, 0.64, -0.12);
+    const backGeo = new THREE.BoxGeometry(seatW, 0.25, 0.025);
+    const back = new THREE.Mesh(backGeo, cushionMat);
+    back.position.set(0, seatHeight + 0.14, -seatD * 0.45);
     chair.add(back);
 
-    // 4 legs
-    const legGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.45, 6);
-    const legMat = new THREE.MeshStandardMaterial({ color: 0x1a0a08, roughness: 0.4, metalness: 0.3 });
+    // 4 legs from floor to seat
+    const legH = seatHeight;
+    const legGeo = new THREE.CylinderGeometry(0.012, 0.012, legH, 6);
     [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([sx,sz]) => {
       const leg = new THREE.Mesh(legGeo, legMat);
-      leg.position.set(sx * 0.11, 0.225, sz * 0.11);
+      leg.position.set(sx * seatW * 0.4, legH / 2, sz * seatD * 0.4);
       chair.add(leg);
     });
 
     chair.position.set(px, 0, pz);
     chair.rotation.y = Math.atan2(-px, -pz);
-    chair.scale.setScalar(0.55);
     this.scene.add(chair);
     this.chairs.push(chair);
   }
@@ -420,8 +423,8 @@ export class BotModels {
     const pz = seatPos.z * pushFactor;
 
     // At 0.55 scale: belt (local 0.32) = 0.176 world units above group origin
-    // Table surface at Y=0.88 → group.y = 0.88 - 0.176 = 0.70
-    group.position.set(px, 0.70, pz);
+    // Table surface at Y=0.95 → group.y = 0.95 - 0.176 = 0.774
+    group.position.set(px, 0.774, pz);
     // Only rotate around Y axis to face table center
     group.rotation.y = Math.atan2(-px, -pz);
 
@@ -484,7 +487,9 @@ export class BotModels {
   static HAND_BASE_Y = 0.14;
 
   update(delta) {
+    this.updateRagdolls(delta);
     this.models.forEach(model => {
+      if (model.isDead) return;
       model.time += delta;
       const t = model.time;
       const HY = BotModels.HEAD_BASE_Y;
@@ -710,6 +715,149 @@ export class BotModels {
   triggerPlayerAbilityAnim(abilityId, playerPos) {
     const pos = playerPos || new THREE.Vector3(0, 1.0, 1.0);
     this.spawnAbilityEffect(abilityId, pos);
+  }
+
+  // === RAGDOLL DEATH ===
+  triggerRagdoll(botIndex) {
+    const model = this.models.find(m => m.index === botIndex);
+    if (!model) return;
+
+    model.isDead = true;
+    const group = model.group;
+    const worldPos = new THREE.Vector3();
+    group.getWorldPosition(worldPos);
+
+    // Detach each child into its own ragdoll piece
+    const pieces = [];
+    const children = [...group.children];
+    children.forEach(child => {
+      if (!child.isMesh && !child.isGroup) return;
+      // Get world position/rotation before detaching
+      const wPos = new THREE.Vector3();
+      child.getWorldPosition(wPos);
+      const wQuat = new THREE.Quaternion();
+      child.getWorldQuaternion(wQuat);
+      const wScale = new THREE.Vector3();
+      child.getWorldScale(wScale);
+
+      group.remove(child);
+      child.position.copy(wPos);
+      child.quaternion.copy(wQuat);
+      child.scale.copy(wScale);
+      this.scene.add(child);
+
+      // Random explosion velocity away from table center + upward
+      const dir = wPos.clone().sub(new THREE.Vector3(0, wPos.y, 0)).normalize();
+      pieces.push({
+        mesh: child,
+        velocity: new THREE.Vector3(
+          dir.x * (1.5 + Math.random() * 2),
+          2 + Math.random() * 3,
+          dir.z * (1.5 + Math.random() * 2)
+        ),
+        angularVel: new THREE.Vector3(
+          (Math.random() - 0.5) * 8,
+          (Math.random() - 0.5) * 8,
+          (Math.random() - 0.5) * 8
+        ),
+        age: 0,
+      });
+    });
+
+    // Remove original group
+    this.scene.remove(group);
+
+    // Store ragdoll for update
+    if (!this.ragdolls) this.ragdolls = [];
+    this.ragdolls.push({ pieces, age: 0, maxAge: 3.5 });
+
+    // Also knock over the chair
+    const chairIdx = this.chairs.findIndex((_, ci) => ci === botIndex);
+    if (chairIdx >= 0 && this.chairs[chairIdx]) {
+      const chair = this.chairs[chairIdx];
+      if (!this.ragdolls) this.ragdolls = [];
+      const cPieces = [];
+      const cPos = chair.position.clone();
+      cPieces.push({
+        mesh: chair,
+        velocity: new THREE.Vector3(
+          (Math.random() - 0.5) * 2,
+          1 + Math.random(),
+          (Math.random() - 0.5) * 2
+        ),
+        angularVel: new THREE.Vector3(
+          (Math.random() - 0.5) * 5,
+          (Math.random() - 0.5) * 3,
+          (Math.random() - 0.5) * 5
+        ),
+        age: 0,
+      });
+      this.ragdolls.push({ pieces: cPieces, age: 0, maxAge: 3.5 });
+    }
+
+    // Spawn blood particles
+    for (let i = 0; i < 25; i++) {
+      const geo = new THREE.SphereGeometry(0.008 + Math.random() * 0.015, 4, 4);
+      const mat = new THREE.MeshBasicMaterial({ color: 0xcc0000, transparent: true, opacity: 1 });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.copy(worldPos);
+      mesh.position.y += 0.3;
+      this.scene.add(mesh);
+      this.abilityEffects.push({
+        group: mesh, particles: [{
+          mesh, vx: (Math.random() - 0.5) * 2,
+          vy: Math.random() * 2 + 1,
+          vz: (Math.random() - 0.5) * 2,
+        }], age: 0, maxAge: 2,
+      });
+    }
+  }
+
+  updateRagdolls(delta) {
+    if (!this.ragdolls) return;
+    this.ragdolls = this.ragdolls.filter(ragdoll => {
+      ragdoll.age += delta;
+      if (ragdoll.age > ragdoll.maxAge) {
+        ragdoll.pieces.forEach(p => {
+          p.mesh.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); });
+          this.scene.remove(p.mesh);
+        });
+        return false;
+      }
+      ragdoll.pieces.forEach(p => {
+        p.age += delta;
+        // Apply velocity
+        p.mesh.position.x += p.velocity.x * delta;
+        p.mesh.position.y += p.velocity.y * delta;
+        p.mesh.position.z += p.velocity.z * delta;
+        // Gravity
+        p.velocity.y -= 9.8 * delta;
+        // Floor collision
+        if (p.mesh.position.y < 0.02) {
+          p.mesh.position.y = 0.02;
+          p.velocity.y *= -0.3; // bounce
+          p.velocity.x *= 0.7;
+          p.velocity.z *= 0.7;
+          p.angularVel.multiplyScalar(0.5);
+        }
+        // Angular rotation
+        p.mesh.rotation.x += p.angularVel.x * delta;
+        p.mesh.rotation.y += p.angularVel.y * delta;
+        p.mesh.rotation.z += p.angularVel.z * delta;
+        // Fade out near end
+        const fadeStart = ragdoll.maxAge - 1;
+        if (ragdoll.age > fadeStart) {
+          const fade = 1 - (ragdoll.age - fadeStart) / 1;
+          p.mesh.traverse(c => {
+            if (c.material && !c.material._fadeDone) {
+              c.material.transparent = true;
+              c.material.opacity = fade;
+            }
+          });
+        }
+      });
+      return true;
+    });
   }
 
   dispose() {
