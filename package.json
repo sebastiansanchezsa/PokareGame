@@ -1,0 +1,21 @@
+{
+  "name": "pokare-game",
+  "version": "2.0.0",
+  "description": "Retrowave First-Person Poker Game - Multiplayer",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch server/index.js & vite",
+    "dev:win": "start /B node server/index.js && vite",
+    "server": "node server/index.js",
+    "client": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "three": "^0.160.0",
+    "ws": "^8.19.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}

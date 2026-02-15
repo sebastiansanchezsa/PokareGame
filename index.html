@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>POKARE - Retrowave Poker</title>
+  <link rel="stylesheet" href="/src/styles/main.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="game-canvas"></canvas>
+    
+    <!-- Main Menu -->
+    <div id="main-menu" class="menu-screen">
+      <div class="menu-title">
+        <h1>POKARE</h1>
+        <p class="subtitle">RETROWAVE POKER</p>
+      </div>
+      <div class="menu-buttons">
+        <button class="neon-btn" id="btn-single">JUGAR VS BOTS</button>
+        <button class="neon-btn" id="btn-multi">MULTIJUGADOR</button>
+        <button class="neon-btn" id="btn-tutorial">TUTORIAL</button>
+        <button class="neon-btn" id="btn-settings">OPCIONES</button>
+      </div>
+      <div class="menu-footer">
+        <p>♠ ♥ ♦ ♣</p>
+      </div>
+    </div>
+
+    <!-- Profile Setup (shown before multiplayer) -->
+    <div id="profile-setup" class="menu-screen hidden">
+      <h2 class="section-title">TU PERFIL</h2>
+      <div class="profile-form">
+        <div class="avatar-area">
+          <div class="avatar-preview" id="avatar-preview">
+            <span class="avatar-placeholder">?</span>
+          </div>
+          <label class="avatar-upload-btn neon-btn secondary" for="avatar-input">FOTO (OPCIONAL)</label>
+          <input type="file" id="avatar-input" accept="image/*" style="display:none">
+        </div>
+        <div class="option-group">
+          <label>NOMBRE DE USUARIO</label>
+          <input type="text" id="username-input" class="neon-input" placeholder="Tu nombre..." maxlength="20" value="">
+        </div>
+      </div>
+      <div class="setup-buttons">
+        <button class="neon-btn" id="btn-profile-continue">CONTINUAR</button>
+        <button class="neon-btn secondary" id="btn-profile-back">VOLVER</button>
+      </div>
+    </div>
+
+    <!-- Multiplayer Lobby -->
+    <div id="mp-lobby" class="menu-screen hidden">
+      <h2 class="section-title">MULTIJUGADOR</h2>
+      <div class="lobby-options">
+        <div class="lobby-box">
+          <h3>CREAR SALA</h3>
+          <div class="option-group">
+            <label>FICHAS INICIALES</label>
+            <div class="option-selector">
+              <button class="opt-btn" data-mp-chips="500">500</button>
+              <button class="opt-btn active" data-mp-chips="1000">1000</button>
+              <button class="opt-btn" data-mp-chips="5000">5000</button>
+            </div>
+          </div>
+          <div class="option-group">
+            <label>HABILIDADES</label>
+            <div class="option-selector">
+              <button class="opt-btn active" data-mp-abilities="on">ON</button>
+              <button class="opt-btn" data-mp-abilities="off">OFF</button>
+            </div>
+          </div>
+          <button class="neon-btn" id="btn-create-room">CREAR SALA</button>
+        </div>
+        <div class="lobby-divider">O</div>
+        <div class="lobby-box">
+          <h3>UNIRSE A SALA</h3>
+          <div class="option-group">
+            <label>CÓDIGO DE SALA</label>
+            <input type="text" id="room-code-input" class="neon-input room-code" placeholder="XXXXX" maxlength="5">
+          </div>
+          <button class="neon-btn" id="btn-join-room">UNIRSE</button>
+        </div>
+      </div>
+      <div class="lobby-status" id="lobby-status"></div>
+      <div class="setup-buttons">
+        <button class="neon-btn secondary" id="btn-lobby-back">VOLVER</button>
+      </div>
+    </div>
+
+    <!-- Room Waiting -->
+    <div id="room-waiting" class="menu-screen hidden">
+      <h2 class="section-title">SALA <span id="room-code-display" class="room-code-big"></span></h2>
+      <p class="room-copy-hint">Comparte este código con tus amigos</p>
+      <div class="room-players" id="room-players-list"></div>
+      <div class="setup-buttons">
+        <button class="neon-btn" id="btn-room-start" style="display:none">INICIAR PARTIDA</button>
+        <button class="neon-btn secondary" id="btn-room-leave">SALIR DE SALA</button>
+      </div>
+    </div>
+
+    <!-- Bot Setup -->
+    <div id="bot-setup" class="menu-screen hidden">
+      <h2 class="section-title">CONFIGURAR PARTIDA</h2>
+      <div class="setup-options">
+        <div class="option-group">
+          <label>NÚMERO DE BOTS</label>
+          <div class="option-selector">
+            <button class="opt-btn" data-bots="1">1</button>
+            <button class="opt-btn active" data-bots="2">2</button>
+            <button class="opt-btn" data-bots="3">3</button>
+            <button class="opt-btn" data-bots="4">4</button>
+          </div>
+        </div>
+        <div class="option-group">
+          <label>DIFICULTAD</label>
+          <div class="option-selector">
+            <button class="opt-btn" data-diff="easy">FÁCIL</button>
+            <button class="opt-btn active" data-diff="medium">MEDIO</button>
+            <button class="opt-btn" data-diff="hard">DIFÍCIL</button>
+          </div>
+        </div>
+        <div class="option-group">
+          <label>FICHAS INICIALES</label>
+          <div class="option-selector">
+            <button class="opt-btn" data-chips="500">500</button>
+            <button class="opt-btn active" data-chips="1000">1000</button>
+            <button class="opt-btn" data-chips="5000">5000</button>
+          </div>
+        </div>
+      </div>
+      <div class="setup-buttons">
+        <button class="neon-btn" id="btn-start-game">INICIAR PARTIDA</button>
+        <button class="neon-btn secondary" id="btn-back-menu">VOLVER</button>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div id="settings-screen" class="menu-screen hidden">
+      <h2 class="section-title">OPCIONES</h2>
+      <div class="setup-options">
+        <div class="option-group">
+          <label>VOLUMEN MÚSICA</label>
+          <input type="range" id="vol-music" min="0" max="100" value="50" class="neon-slider">
+        </div>
+        <div class="option-group">
+          <label>VOLUMEN EFECTOS</label>
+          <input type="range" id="vol-sfx" min="0" max="100" value="70" class="neon-slider">
+        </div>
+        <div class="option-group">
+          <label>EFECTO VHS</label>
+          <div class="option-selector">
+            <button class="opt-btn active" data-vhs="on">ON</button>
+            <button class="opt-btn" data-vhs="off">OFF</button>
+          </div>
+        </div>
+      </div>
+      <div class="setup-buttons">
+        <button class="neon-btn secondary" id="btn-back-settings">VOLVER</button>
+      </div>
+    </div>
+
+    <!-- Game HUD -->
+    <div id="game-hud" class="hidden">
+      <!-- Top bar -->
+      <div class="hud-top">
+        <div class="pot-display">
+          <span class="pot-label">POZO</span>
+          <span class="pot-value" id="pot-value">$0</span>
+        </div>
+        <div class="round-display">
+          <span id="round-phase">ESPERANDO...</span>
+        </div>
+        <div class="room-code-hud" id="room-code-hud" style="display:none"></div>
+      </div>
+
+      <!-- Player cards display (center, 3D backing) -->
+      <div class="hud-cards" id="player-cards-hud"></div>
+
+      <!-- Mini 2D cards bottom-left -->
+      <div class="mini-cards" id="mini-cards"></div>
+
+      <!-- Other players info -->
+      <div class="hud-players" id="players-display"></div>
+
+      <!-- Abilities bar -->
+      <div class="abilities-bar" id="abilities-bar" style="display:none">
+        <button class="ability-btn" data-ability="peek" title="Ve la próxima carta comunitaria ($100)">
+          <span class="ability-icon">&#128065;</span><span class="ability-name">Visión</span><span class="ability-cost">$100</span>
+        </button>
+        <button class="ability-btn" data-ability="shield" title="Protege tu apuesta de raises ($150)">
+          <span class="ability-icon">&#128737;</span><span class="ability-name">Escudo</span><span class="ability-cost">$150</span>
+        </button>
+        <button class="ability-btn" data-ability="intimidate" title="Intimida a los oponentes ($75)">
+          <span class="ability-icon">&#128544;</span><span class="ability-name">Intimidar</span><span class="ability-cost">$75</span>
+        </button>
+        <button class="ability-btn" data-ability="fortune" title="Gana +50% del pozo si ganas ($200)">
+          <span class="ability-icon">&#127808;</span><span class="ability-name">Fortuna</span><span class="ability-cost">$200</span>
+        </button>
+      </div>
+
+      <!-- Bottom controls -->
+      <div class="hud-bottom">
+        <div class="player-info">
+          <div class="player-avatar-mini" id="hud-avatar"></div>
+          <div>
+            <span class="player-name" id="hud-player-name">TÚ</span>
+            <span class="player-chips" id="player-chips">$1000</span>
+          </div>
+        </div>
+        <div class="betting-controls" id="betting-controls">
+          <button class="action-btn fold-btn" id="btn-fold">FOLD</button>
+          <button class="action-btn check-btn" id="btn-check">CHECK</button>
+          <button class="action-btn call-btn" id="btn-call">CALL <span id="call-amount"></span></button>
+          <div class="raise-group">
+            <input type="range" id="raise-slider" min="0" max="1000" value="100" class="neon-slider raise-slider">
+            <span class="raise-value" id="raise-value">$100</span>
+            <button class="action-btn raise-btn" id="btn-raise">RAISE</button>
+          </div>
+          <button class="action-btn allin-btn" id="btn-allin">ALL IN</button>
+        </div>
+      </div>
+
+      <!-- Message display -->
+      <div class="hud-message" id="hud-message"></div>
+
+      <!-- Chat (multiplayer) -->
+      <div class="chat-box" id="chat-box" style="display:none">
+        <div class="chat-messages" id="chat-messages"></div>
+        <div class="chat-input-row">
+          <input type="text" id="chat-input" class="neon-input chat-input" placeholder="Mensaje..." maxlength="200">
+          <button class="action-btn check-btn" id="btn-chat-send">&#9654;</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Win/Loss overlay -->
+    <div id="round-result" class="hidden">
+      <div class="result-content">
+        <h2 id="result-title"></h2>
+        <p id="result-detail"></p>
+        <div id="result-hands"></div>
+        <button class="neon-btn" id="btn-next-round">SIGUIENTE MANO</button>
+      </div>
+    </div>
+
+    <!-- Elimination overlay -->
+    <div id="elimination-overlay" class="hidden">
+      <div class="elim-content">
+        <div class="elim-skull">&#9760;</div>
+        <h2 class="elim-title" id="elim-title">ELIMINADO</h2>
+        <p class="elim-name" id="elim-name"></p>
+        <div class="elim-glitch"></div>
+      </div>
+    </div>
+
+    <!-- Ability effect overlay -->
+    <div id="ability-overlay" class="hidden">
+      <div class="ability-effect-content" id="ability-effect-content"></div>
+    </div>
+
+    <!-- Tutorial overlay -->
+    <div id="tutorial-overlay" class="hidden">
+      <div class="tutorial-content">
+        <div class="tutorial-header">
+          <h2>TUTORIAL</h2>
+          <button class="tutorial-close" id="btn-tutorial-close">&#10005;</button>
+        </div>
+        <div class="tutorial-slides" id="tutorial-slides">
+          <!-- Slides injected via JS -->
+        </div>
+        <div class="tutorial-nav">
+          <button class="neon-btn secondary" id="btn-tut-prev">&#9664; ANTERIOR</button>
+          <span class="tutorial-progress" id="tut-progress">1 / 8</span>
+          <button class="neon-btn" id="btn-tut-next">SIGUIENTE &#9654;</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Peek card overlay -->
+    <div id="peek-overlay" class="hidden">
+      <div class="peek-content">
+        <h3>VISIÓN ACTIVADA</h3>
+        <div class="peek-card" id="peek-card"></div>
+        <p>Próxima carta comunitaria</p>
+        <button class="neon-btn secondary" id="btn-peek-close">CERRAR</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
