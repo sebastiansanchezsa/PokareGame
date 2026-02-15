@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Card3D, SUIT_SYMBOLS } from './Card.js';
+import { BotModels } from './BotModels.js';
 
 /**
  * Renders 3D cards and chips on the table based on server game state.
@@ -22,6 +23,7 @@ export class MultiplayerRenderer {
     this.onSuspenseComplete = null;
     this._lastMyIndex = -1;
     this._lastNumPlayers = 0;
+    this.playerModels = null; // BotModels instance for remote players
   }
 
   /**
@@ -37,6 +39,41 @@ export class MultiplayerRenderer {
     }
     this._lastMyIndex = myIndex;
     this._lastNumPlayers = numPlayers;
+
+    // Create 3D character models for remote players
+    this.createPlayerModels(numPlayers, myIndex);
+  }
+
+  createPlayerModels(numPlayers, myIndex) {
+    if (this.playerModels) this.playerModels.dispose();
+    this.playerModels = new BotModels(this.scene);
+
+    // Create models for all non-local players
+    const positions = [];
+    const names = [];
+    // Position 0 is always local player (front seat) — add it but skip model
+    for (let i = 0; i < numPlayers; i++) {
+      positions.push(this.playerPositions[i]);
+    }
+    // BotModels.createBots starts from index 1 (skips player 0), which is what we want
+    const remoteNames = [];
+    for (let i = 1; i < numPlayers; i++) {
+      remoteNames.push(`P${i + 1}`);
+    }
+    this.playerModels.createBots(positions, remoteNames);
+  }
+
+  updatePlayerNames(state, myIndex) {
+    if (!this.playerModels) return;
+    // Update name tags with actual player names from state
+    state.players.forEach((p, idx) => {
+      if (idx === myIndex) return;
+      const remapped = (idx - myIndex + state.players.length) % state.players.length;
+      const model = this.playerModels.models.find(m => m.index === remapped);
+      if (model && p.name && model.name !== p.name) {
+        model.name = p.name;
+      }
+    });
   }
 
   /**
@@ -353,6 +390,7 @@ export class MultiplayerRenderer {
 
   update(delta) {
     this.cardMeshes.forEach(card => card.update(delta));
+    if (this.playerModels) this.playerModels.update(delta);
   }
 
   clearTable() {
@@ -367,5 +405,13 @@ export class MultiplayerRenderer {
     this.lastCommunityCount = 0;
     this.suspenseActive = false;
     this.suspenseCard = null;
+  }
+
+  dispose() {
+    this.clearTable();
+    if (this.playerModels) {
+      this.playerModels.dispose();
+      this.playerModels = null;
+    }
   }
 }

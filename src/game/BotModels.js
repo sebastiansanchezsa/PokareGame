@@ -9,6 +9,8 @@ export class BotModels {
   constructor(scene) {
     this.scene = scene;
     this.models = [];
+    this.chairs = [];
+    this.abilityEffects = [];
   }
 
   createBots(positions, botNames) {
@@ -19,7 +21,49 @@ export class BotModels {
       const model = this.createCharacter(pos, i, name);
       this.models.push(model);
       this.scene.add(model.group);
+      this.createChair(pos, i);
     }
+    // Also create chair at player seat (position 0)
+    if (positions.length > 0) {
+      this.createChair(positions[0], 0);
+    }
+  }
+
+  createChair(pos, index) {
+    const chair = new THREE.Group();
+    const seatPos = pos.seat;
+    const pushFactor = index === 0 ? 1.15 : 1.3;
+    const px = seatPos.x * pushFactor;
+    const pz = seatPos.z * pushFactor;
+
+    // Seat cushion
+    const cushionGeo = new THREE.BoxGeometry(0.28, 0.04, 0.28);
+    const cushionMat = new THREE.MeshStandardMaterial({ color: 0x2a0a1a, roughness: 0.8 });
+    const cushion = new THREE.Mesh(cushionGeo, cushionMat);
+    cushion.position.y = 0.45;
+    chair.add(cushion);
+
+    // Backrest
+    const backGeo = new THREE.BoxGeometry(0.28, 0.35, 0.04);
+    const backMat = new THREE.MeshStandardMaterial({ color: 0x2a0a1a, roughness: 0.8 });
+    const back = new THREE.Mesh(backGeo, backMat);
+    back.position.set(0, 0.64, -0.12);
+    chair.add(back);
+
+    // 4 legs
+    const legGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.45, 6);
+    const legMat = new THREE.MeshStandardMaterial({ color: 0x1a0a08, roughness: 0.4, metalness: 0.3 });
+    [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([sx,sz]) => {
+      const leg = new THREE.Mesh(legGeo, legMat);
+      leg.position.set(sx * 0.11, 0.225, sz * 0.11);
+      chair.add(leg);
+    });
+
+    chair.position.set(px, 0, pz);
+    chair.rotation.y = Math.atan2(-px, -pz);
+    chair.scale.setScalar(0.55);
+    this.scene.add(chair);
+    this.chairs.push(chair);
   }
 
   createCharacter(pos, index, name) {
@@ -383,11 +427,11 @@ export class BotModels {
 
     // === NAME TAG ===
     const nameSprite = this.createNameTag(name, neonColor);
-    // Position above head: head at local 0.92, want tag ~0.15 above in world
-    // Local Y = (head + gap) = 0.92 + 0.15/modelScale ≈ 1.19
-    nameSprite.position.set(0, 1.19, 0);
-    // Counter-scale so tag stays readable (0.7 world units wide)
-    nameSprite.scale.setScalar(0.7 / modelScale);
+    // Position above head in local space
+    nameSprite.position.set(0, 1.2, 0);
+    // Counter-scale preserving 4:1 aspect ratio (0.5 x 0.125 base)
+    const tagFactor = 0.6 / modelScale;
+    nameSprite.scale.set(0.5 * tagFactor, 0.125 * tagFactor, 1);
     group.add(nameSprite);
 
     return {
@@ -435,40 +479,44 @@ export class BotModels {
     return sprite;
   }
 
+  // Base positions for head/hands (constants to prevent drift)
+  static HEAD_BASE_Y = 0.92;
+  static HAND_BASE_Y = 0.14;
+
   update(delta) {
     this.models.forEach(model => {
       model.time += delta;
       const t = model.time;
+      const HY = BotModels.HEAD_BASE_Y;
 
       // === BREATHING (torso subtle scale) ===
-      const breath = Math.sin(t * 1.2 + model.breathPhase) * 0.003;
+      const breath = Math.sin(t * 1.2 + model.breathPhase) * 0.002;
       model.torso.scale.y = 1 + breath;
       model.torso.scale.z = 1 + breath * 0.5;
 
-      // === HEAD IDLE MOVEMENT ===
+      // === HEAD IDLE MOVEMENT (small values to prevent detach) ===
       if (!model.reactionAnim) {
-        const headBob = Math.sin(t * 0.7) * 0.004;
-        const headTilt = Math.sin(t * 0.4 + 1.5) * 0.025;
-        const headNod = Math.sin(t * 0.25) * 0.015;
-        const headTurn = Math.sin(t * 0.15 + 2) * 0.04;
+        const headBob = Math.sin(t * 0.7) * 0.002;
+        const headTilt = Math.sin(t * 0.4 + 1.5) * 0.015;
+        const headNod = Math.sin(t * 0.25) * 0.01;
+        const headTurn = Math.sin(t * 0.15 + 2) * 0.025;
 
-        model.headGroup.position.y = 0.92 + headBob;
+        model.headGroup.position.y = HY + headBob;
         model.headGroup.rotation.z = headTilt;
         model.headGroup.rotation.x = headNod;
         model.headGroup.rotation.y = headTurn;
       }
 
-      // === BLINKING (close mouth slightly) ===
+      // === BLINKING ===
       model.blinkTimer -= delta;
       if (model.blinkTimer <= 0) {
         model.blinkTimer = 2 + Math.random() * 4;
-        // Quick blink by scaling lenses
         const lenses = model.headGroup.children.filter(c =>
           c.material && c.material.emissiveIntensity !== undefined && c.material.emissiveIntensity > 0
         );
         lenses.forEach(l => {
           l.scale.y = 0.1;
-          setTimeout(() => { l.scale.y = 1; }, 120);
+          setTimeout(() => { if (l.parent) l.scale.y = 1; }, 120);
         });
       }
 
@@ -476,64 +524,55 @@ export class BotModels {
       model.fidgetTimer -= delta;
       if (model.fidgetTimer <= 0) {
         model.fidgetTimer = 4 + Math.random() * 6;
-        const hand = Math.random() > 0.5 ? model.rightHand : model.leftHand;
-        const origY = hand.position.y;
-        hand.position.y += 0.02;
-        setTimeout(() => { hand.position.y = origY; }, 400);
       }
 
       // Subtle hand sway
-      const handSway = Math.sin(t * 0.6 + model.breathPhase) * 0.003;
-      model.leftHand.position.y = 0.14 + handSway;
-      model.rightHand.position.y = 0.14 - handSway;
+      const handSway = Math.sin(t * 0.6 + model.breathPhase) * 0.002;
+      model.leftHand.position.y = BotModels.HAND_BASE_Y + handSway;
+      model.rightHand.position.y = BotModels.HAND_BASE_Y - handSway;
 
-      // === REACTION ANIMATIONS ===
+      // === REACTION ANIMATIONS (clamped movements) ===
       if (model.reactionAnim) {
         model.reactionTime += delta;
         const rt = model.reactionTime;
         const anim = model.reactionAnim;
 
         if (anim === 'fold') {
-          // Slump: head down, shoulders drop
-          const progress = Math.min(rt / 0.4, 1);
-          model.headGroup.rotation.x = 0.25 * progress;
-          model.headGroup.position.y = 0.92 - 0.02 * progress;
-          model.torso.position.z = -0.01 * progress;
+          const p = Math.min(rt / 0.4, 1);
+          model.headGroup.rotation.x = 0.12 * p;
+          model.headGroup.position.y = HY - 0.01 * p;
           if (rt > 1.2) this.clearReaction(model);
         } else if (anim === 'raise') {
-          // Lean forward confidently
-          const progress = Math.min(rt / 0.3, 1);
-          model.torso.position.z = 0.03 * progress;
-          model.headGroup.rotation.x = -0.08 * progress;
-          model.headGroup.position.y = 0.92 + 0.01 * progress;
+          const p = Math.min(rt / 0.3, 1);
+          model.headGroup.rotation.x = -0.06 * p;
+          model.headGroup.position.y = HY + 0.005 * p;
           if (rt > 0.8) this.clearReaction(model);
         } else if (anim === 'allin') {
-          // Dramatic lean forward, arms spread
-          const progress = Math.min(rt / 0.25, 1);
-          model.torso.position.z = 0.05 * progress;
-          model.headGroup.rotation.x = -0.12 * progress;
-          model.headGroup.position.y = 0.92 + 0.015 * progress;
-          model.leftUpperArm.rotation.z = (0.35 + 0.15 * progress);
-          model.rightUpperArm.rotation.z = -(0.35 + 0.15 * progress);
+          const p = Math.min(rt / 0.25, 1);
+          model.headGroup.rotation.x = -0.08 * p;
+          model.headGroup.position.y = HY + 0.008 * p;
+          model.leftUpperArm.rotation.z = (0.35 + 0.1 * p);
+          model.rightUpperArm.rotation.z = -(0.35 + 0.1 * p);
           if (rt > 1.5) this.clearReaction(model);
         } else if (anim === 'win') {
-          // Head up, slight lean back
-          const progress = Math.min(rt / 0.3, 1);
-          model.headGroup.rotation.x = -0.15 * progress;
-          model.headGroup.position.y = 0.92 + 0.02 * progress;
+          const p = Math.min(rt / 0.3, 1);
+          model.headGroup.rotation.x = -0.08 * p;
+          model.headGroup.position.y = HY + 0.01 * p;
           if (rt > 1.5) this.clearReaction(model);
         }
       }
     });
+
+    // Update ability effects
+    this.updateAbilityEffects(delta);
   }
 
   clearReaction(model) {
     model.reactionAnim = null;
     model.reactionTime = 0;
-    // Smoothly reset positions
     model.torso.position.z = 0;
-    model.headGroup.position.y = 0.92;
-    model.headGroup.rotation.x = 0;
+    model.headGroup.position.y = BotModels.HEAD_BASE_Y;
+    model.headGroup.rotation.set(0, 0, 0);
     model.leftUpperArm.rotation.z = 0.35;
     model.rightUpperArm.rotation.z = -0.35;
   }
@@ -543,6 +582,134 @@ export class BotModels {
     if (!model) return;
     model.reactionAnim = type;
     model.reactionTime = 0;
+  }
+
+  // === ABILITY EFFECTS ===
+  // Ability color/style map
+  static ABILITY_STYLES = {
+    peek: { color: 0x00ccff, symbol: '👁', pattern: 'spiral' },
+    shield: { color: 0xbb88ff, symbol: '🛡', pattern: 'ring' },
+    intimidate: { color: 0xff3c3c, symbol: '👻', pattern: 'burst' },
+    swap: { color: 0x00ff88, symbol: '🔄', pattern: 'swirl' },
+    doubledown: { color: 0xffd700, symbol: '⚔', pattern: 'burst' },
+    xray: { color: 0x00ffcc, symbol: '🔍', pattern: 'spiral' },
+    freeze: { color: 0x88ddff, symbol: '❄', pattern: 'ring' },
+    luck: { color: 0x44ff44, symbol: '🍀', pattern: 'swirl' },
+    steal: { color: 0xff8800, symbol: '💰', pattern: 'burst' },
+    mirror: { color: 0xccccff, symbol: '🪞', pattern: 'ring' },
+    smoke: { color: 0x888888, symbol: '💨', pattern: 'cloud' },
+    rage: { color: 0xff2200, symbol: '🔥', pattern: 'burst' },
+    calm: { color: 0x66bbff, symbol: '🧘', pattern: 'ring' },
+    bluff: { color: 0xff66cc, symbol: '🎭', pattern: 'swirl' },
+    reload: { color: 0x44ff88, symbol: '🔋', pattern: 'spiral' },
+    oracle: { color: 0xaa44ff, symbol: '🔮', pattern: 'spiral' },
+    sabotage: { color: 0xff4400, symbol: '💣', pattern: 'burst' },
+    revival: { color: 0x44ffff, symbol: '💎', pattern: 'ring' },
+    tax: { color: 0xccaa44, symbol: '📜', pattern: 'swirl' },
+    insight: { color: 0xff88ff, symbol: '🧠', pattern: 'spiral' },
+    wildcard: { color: 0xffffff, symbol: '🃏', pattern: 'burst' },
+    phantom: { color: 0x8844aa, symbol: '👤', pattern: 'cloud' },
+    jackpot: { color: 0xffdd00, symbol: '🎰', pattern: 'burst' },
+    aura: { color: 0xffcc88, symbol: '✨', pattern: 'ring' },
+    counter: { color: 0x4488ff, symbol: '⚡', pattern: 'burst' },
+  };
+
+  spawnAbilityEffect(abilityId, worldPos) {
+    const style = BotModels.ABILITY_STYLES[abilityId] || { color: 0xff6ec7, pattern: 'burst' };
+    const particles = [];
+    const group = new THREE.Group();
+    group.position.copy(worldPos);
+    group.position.y += 0.15;
+
+    const count = style.pattern === 'burst' ? 20 : style.pattern === 'ring' ? 16 : 12;
+
+    for (let i = 0; i < count; i++) {
+      const size = 0.01 + Math.random() * 0.02;
+      const geo = new THREE.SphereGeometry(size, 4, 4);
+      const mat = new THREE.MeshBasicMaterial({ color: style.color, transparent: true, opacity: 1 });
+      const mesh = new THREE.Mesh(geo, mat);
+
+      let vx = 0, vy = 0, vz = 0;
+      if (style.pattern === 'burst') {
+        vx = (Math.random() - 0.5) * 0.8;
+        vy = Math.random() * 0.5 + 0.2;
+        vz = (Math.random() - 0.5) * 0.8;
+      } else if (style.pattern === 'ring') {
+        const a = (i / count) * Math.PI * 2;
+        vx = Math.cos(a) * 0.3;
+        vy = 0.1 + Math.random() * 0.1;
+        vz = Math.sin(a) * 0.3;
+      } else if (style.pattern === 'spiral') {
+        const a = (i / count) * Math.PI * 4;
+        const r = 0.1 + (i / count) * 0.2;
+        vx = Math.cos(a) * r;
+        vy = 0.3 + (i / count) * 0.3;
+        vz = Math.sin(a) * r;
+      } else if (style.pattern === 'swirl') {
+        const a = (i / count) * Math.PI * 3;
+        vx = Math.cos(a) * 0.25;
+        vy = 0.2;
+        vz = Math.sin(a) * 0.25;
+      } else { // cloud
+        vx = (Math.random() - 0.5) * 0.3;
+        vy = Math.random() * 0.15;
+        vz = (Math.random() - 0.5) * 0.3;
+      }
+
+      mesh.position.set(0, 0, 0);
+      group.add(mesh);
+      particles.push({ mesh, vx, vy, vz, life: 1.0 + Math.random() * 0.5 });
+    }
+
+    this.scene.add(group);
+    this.abilityEffects.push({ group, particles, age: 0, maxAge: 1.5 });
+  }
+
+  updateAbilityEffects(delta) {
+    this.abilityEffects = this.abilityEffects.filter(effect => {
+      effect.age += delta;
+      if (effect.age > effect.maxAge) {
+        effect.group.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); });
+        this.scene.remove(effect.group);
+        return false;
+      }
+      const progress = effect.age / effect.maxAge;
+      effect.particles.forEach(p => {
+        p.mesh.position.x += p.vx * delta;
+        p.mesh.position.y += p.vy * delta;
+        p.mesh.position.z += p.vz * delta;
+        p.vy -= delta * 0.3; // gravity
+        p.mesh.material.opacity = Math.max(0, 1 - progress);
+        p.mesh.scale.setScalar(1 - progress * 0.5);
+      });
+      return true;
+    });
+  }
+
+  // Trigger ability visual at a bot's hand position
+  triggerAbilityAnim(botIndex, abilityId) {
+    const model = this.models.find(m => m.index === botIndex);
+    if (model) {
+      const worldPos = new THREE.Vector3();
+      model.rightHand.getWorldPosition(worldPos);
+      this.spawnAbilityEffect(abilityId, worldPos);
+      // Raise hand gesture
+      const origZ = model.rightUpperArm.rotation.z;
+      model.rightUpperArm.rotation.z = origZ - 0.3;
+      model.rightForearm.rotation.x = -1.2;
+      setTimeout(() => {
+        if (model.rightUpperArm) {
+          model.rightUpperArm.rotation.z = origZ;
+          model.rightForearm.rotation.x = -0.8;
+        }
+      }, 800);
+    }
+  }
+
+  // Trigger ability at player's position (for local player visual)
+  triggerPlayerAbilityAnim(abilityId, playerPos) {
+    const pos = playerPos || new THREE.Vector3(0, 1.0, 1.0);
+    this.spawnAbilityEffect(abilityId, pos);
   }
 
   dispose() {
@@ -557,5 +724,15 @@ export class BotModels {
       this.scene.remove(model.group);
     });
     this.models = [];
+    this.chairs.forEach(chair => {
+      chair.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); });
+      this.scene.remove(chair);
+    });
+    this.chairs = [];
+    this.abilityEffects.forEach(e => {
+      e.group.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); });
+      this.scene.remove(e.group);
+    });
+    this.abilityEffects = [];
   }
 }

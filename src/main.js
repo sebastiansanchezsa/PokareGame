@@ -990,6 +990,10 @@ function setupAbilitiesUI() {
         } else {
           showAbilityEffect(`¡${gameManager.abilities[abilityId].name} activado!`);
           updateAbilityCooldowns(gameManager.getAbilityCooldowns());
+          // Trigger 3D particle effect at player position
+          if (botModels) {
+            botModels.triggerPlayerAbilityAnim(abilityId, new THREE.Vector3(0, 1.05, 1.2));
+          }
         }
       } else if (gameMode === 'multi' && mpClient) {
         mpClient.useAbility(abilityId);
