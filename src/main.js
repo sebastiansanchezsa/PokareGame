@@ -10,17 +10,23 @@ import { SUIT_SYMBOLS } from './game/Card.js';
 import { PlayerHands } from './game/PlayerHands.js';
 import { BotModels } from './game/BotModels.js';
 import { MultiplayerClient } from './network/MultiplayerClient.js';
+import { MultiplayerRenderer } from './game/MultiplayerRenderer.js';
+import { RussianRoulette } from './game/RussianRoulette.js';
 import { Tutorial } from './ui/Tutorial.js';
+import { HAND_NAMES } from './game/PokerLogic.js';
 
 // ===== GLOBALS =====
 let renderer, scene, camera;
 let environment, table, lighting, postProcessing;
 let fpsCamera, gameManager, audioManager, playerHands, botModels;
 let mpClient = null;
+let mpRenderer = null;
+let russianRoulette = null;
 let tutorial = null;
 let clock;
 let gameStarted = false;
 let gameMode = 'none'; // 'single', 'multi', 'none'
+let myPlayerIndex = 0; // my index in multiplayer player list
 
 // ===== USER PROFILE =====
 const userProfile = {
@@ -34,6 +40,9 @@ const settings = {
   difficulty: 'medium',
   startingChips: 1000,
   vhsEnabled: true,
+  bloomEnabled: true,
+  rouletteEnabled: true,
+  brightness: 1.2,
   musicVolume: 0.5,
   sfxVolume: 0.7,
 };
@@ -55,7 +64,7 @@ function init() {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.8;
+  renderer.toneMappingExposure = 1.2;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
 
   scene = new THREE.Scene();
@@ -71,6 +80,8 @@ function init() {
   gameManager = new GameManager(scene, table, audioManager);
   playerHands = new PlayerHands(scene, camera);
   botModels = new BotModels(scene);
+  mpRenderer = new MultiplayerRenderer(scene, table);
+  russianRoulette = new RussianRoulette(scene, camera);
   tutorial = new Tutorial();
 
   window.addEventListener('resize', onResize);
@@ -108,8 +119,10 @@ function animate() {
 
   if (gameStarted) {
     if (gameMode === 'single') gameManager.update(delta);
+    if (gameMode === 'multi') mpRenderer.update(delta);
     playerHands.update(delta);
     botModels.update(delta);
+    russianRoulette.update(delta);
   }
 
   postProcessing.render(elapsed);
@@ -195,6 +208,33 @@ function setupMenuUI() {
       btn.classList.add('active');
       settings.vhsEnabled = btn.dataset.vhs === 'on';
       postProcessing.setVHS(settings.vhsEnabled);
+      audioManager.playSound('click');
+    });
+  });
+
+  // Brightness
+  document.getElementById('vol-brightness').addEventListener('input', e => {
+    settings.brightness = e.target.value / 100;
+    renderer.toneMappingExposure = settings.brightness;
+  });
+
+  // Bloom
+  document.querySelectorAll('[data-bloom]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-bloom]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      settings.bloomEnabled = btn.dataset.bloom === 'on';
+      if (postProcessing.setBloom) postProcessing.setBloom(settings.bloomEnabled);
+      audioManager.playSound('click');
+    });
+  });
+
+  // Russian Roulette toggle
+  document.querySelectorAll('[data-roulette]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-roulette]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      settings.rouletteEnabled = btn.dataset.roulette === 'on';
       audioManager.playSound('click');
     });
   });
@@ -285,6 +325,10 @@ async function connectToMultiplayer() {
   };
 
   mpClient.onGameState = (state) => {
+    // Find my index in player list
+    myPlayerIndex = state.players.findIndex(p => p.id === mpClient.playerId);
+    // Render 3D cards/chips on table
+    mpRenderer.updateFromState(state, myPlayerIndex);
     updateMultiplayerHUD(state);
   };
 
@@ -317,7 +361,7 @@ async function connectToMultiplayer() {
     document.getElementById('result-detail').textContent = msg.winner ? `${msg.winner.name} gana!` : 'Fin';
     document.getElementById('result-hands').innerHTML = '';
     document.getElementById('btn-next-round').textContent = 'VOLVER AL MENÚ';
-    nextRoundAction = () => { gameStarted = false; gameMode = 'none'; showScreen('main-menu'); };
+    nextRoundAction = () => { gameStarted = false; gameMode = 'none'; mpRenderer.clearTable(); showScreen('main-menu'); };
     resultDiv.classList.remove('hidden');
   };
 
@@ -328,6 +372,14 @@ async function connectToMultiplayer() {
   mpClient.onAbilityResult = (msg) => {
     if (msg.ability === 'peek' && msg.card) {
       showPeekCard(msg.card);
+    } else if (msg.ability === 'intimidate') {
+      showMessage(`${msg.targetName} tiene una carta de ${msg.suit === 'hearts' ? '♥' : msg.suit === 'diamonds' ? '♦' : msg.suit === 'clubs' ? '♣' : '♠'}`);
+    } else if (msg.ability === 'swap' && msg.newCards) {
+      showMessage('¡Carta cambiada!');
+      // Update mini cards with new hand
+      updateMiniCards(msg.newCards);
+    } else if (msg.ability === 'doubledown') {
+      showMessage('¡DOBLE O NADA ACTIVADO!');
     }
   };
 
@@ -468,6 +520,9 @@ function startMultiplayerGame() {
   if (userProfile.avatar) {
     document.getElementById('hud-avatar').innerHTML = `<img src="${userProfile.avatar}">`;
   }
+
+  // Initialize 3D multiplayer renderer
+  mpRenderer.clearTable();
 
   gameStarted = true;
   audioManager.init(); audioManager.resume(); audioManager.startMusic();
@@ -641,7 +696,7 @@ function updateMultiplayerHUD(state) {
       <span class="p-action">${p.lastAction || ''}</span>
       ${p.bet > 0 ? `<span class="p-bet">$${p.bet}</span>` : ''}
       ${p.shielded ? '<span style="color:#bb88ff">🛡</span>' : ''}
-      ${p.fortuneActive ? '<span style="color:#ffd700">🍀</span>' : ''}
+      ${p.doubleDownActive ? '<span style="color:#ff4444">x2</span>' : ''}
     `;
     playersDiv.appendChild(tag);
   });
@@ -682,7 +737,8 @@ function onRoundEnd(result) {
   const resultDiv = document.getElementById('round-result');
   const titleEl = document.getElementById('result-title');
   const detailEl = document.getElementById('result-detail');
-  document.getElementById('result-hands').innerHTML = '';
+  const handsDiv = document.getElementById('result-hands');
+  handsDiv.innerHTML = '';
 
   if (result.gameOver) {
     titleEl.textContent = 'PARTIDA TERMINADA';
@@ -698,9 +754,29 @@ function onRoundEnd(result) {
     detailEl.textContent = result.detail;
     audioManager.playSound(humanWon ? 'win' : 'lose');
 
-    // Show elimination animations
-    if (result.eliminated) {
+    // Show hand rankings for all players at showdown
+    if (result.allHands) {
+      result.allHands.forEach(h => {
+        const isWinner = result.winners.some(w => w.index === h.playerIndex);
+        const div = document.createElement('div');
+        div.className = `result-hand${isWinner ? ' winner' : ''}`;
+        const cardsHtml = h.hand && h.hand.cards ? h.hand.cards.slice(0, 5).map(c => {
+          return `<div class="mini-card ${c.suit}" style="width:30px;height:44px;font-size:0.55rem">${c.rank}<br>${SUIT_SYMBOLS[c.suit]}</div>`;
+        }).join('') : '';
+        const handName = h.hand ? h.hand.name : 'Carta Alta';
+        div.innerHTML = `<span class="result-hand-name">${h.player.name}</span><div class="result-hand-cards">${cardsHtml}</div><span class="result-hand-type">${handName}</span>`;
+        handsDiv.appendChild(div);
+      });
+    }
+
+    // Russian roulette for eliminated players
+    if (result.eliminated && result.eliminated.length > 0) {
       result.eliminated.forEach(e => showElimination(e.name));
+    }
+
+    // If human lost, trigger Russian roulette animation
+    if (!humanWon) {
+      triggerRussianRoulette(true);
     }
 
     document.getElementById('btn-next-round').textContent = 'SIGUIENTE MANO';
@@ -724,18 +800,17 @@ function onMultiplayerRoundEnd(result) {
 
   titleEl.textContent = iWon ? '¡GANASTE!' : 'PERDISTE';
   const winnerNames = result.winners.map(w => w.name).join(', ');
-  detailEl.textContent = `${winnerNames} gana $${result.pot}${result.fortuneBonus ? ' (Fortuna +50%)' : ''}`;
+  detailEl.textContent = `${winnerNames} gana $${result.pot}${result.doubleDown ? ' (DOBLE O NADA x2!)' : ''}`;
 
   audioManager.playSound(iWon ? 'win' : 'lose');
 
-  // Show all hands at showdown
+  // Show all hands at showdown with hand rankings
   if (result.allHands) {
     result.allHands.forEach(h => {
       const isWinner = result.winners.some(w => w.id === h.playerId);
       const div = document.createElement('div');
       div.className = `result-hand${isWinner ? ' winner' : ''}`;
       const cardsHtml = h.cards.map(c => {
-        const isRed = c.suit === 'hearts' || c.suit === 'diamonds';
         return `<div class="mini-card ${c.suit}" style="width:30px;height:44px;font-size:0.55rem">${c.rank}<br>${SUIT_SYMBOLS[c.suit]}</div>`;
       }).join('');
       div.innerHTML = `<span class="result-hand-name">${h.name}</span><div class="result-hand-cards">${cardsHtml}</div><span class="result-hand-type">${h.handName}</span>`;
@@ -748,11 +823,49 @@ function onMultiplayerRoundEnd(result) {
     result.eliminated.forEach(e => showElimination(e.name));
   }
 
-  const isHost = mpClient.playerId === (mpClient._hostId || 0);
+  // Russian roulette if I lost
+  if (!iWon) {
+    triggerRussianRoulette(true);
+  }
+
   document.getElementById('btn-next-round').textContent = 'SIGUIENTE MANO';
-  nextRoundAction = () => { if (mpClient) mpClient.nextRound(); };
+  nextRoundAction = () => {
+    mpRenderer.clearTable();
+    if (mpClient) mpClient.nextRound();
+  };
 
   setTimeout(() => resultDiv.classList.remove('hidden'), 1500);
+}
+
+// ===== RUSSIAN ROULETTE =====
+async function triggerRussianRoulette(targetIsSelf) {
+  if (!russianRoulette || russianRoulette.isPlaying || !settings.rouletteEnabled) return;
+
+  // Show overlay
+  const overlay = document.getElementById('roulette-overlay');
+  if (overlay) {
+    overlay.classList.remove('hidden');
+    document.getElementById('roulette-text').textContent = 'RULETA RUSA...';
+  }
+
+  const survived = await russianRoulette.play(targetIsSelf);
+
+  if (overlay) {
+    if (survived) {
+      document.getElementById('roulette-text').textContent = '¡SOBREVIVISTE!';
+      document.getElementById('roulette-text').style.color = '#00ff88';
+    } else {
+      document.getElementById('roulette-text').textContent = '💀 BANG! 💀';
+      document.getElementById('roulette-text').style.color = '#ff2255';
+      // Screen flash red
+      overlay.style.background = 'rgba(255, 0, 0, 0.4)';
+    }
+    setTimeout(() => {
+      overlay.classList.add('hidden');
+      overlay.style.background = '';
+      document.getElementById('roulette-text').style.color = '';
+    }, 2500);
+  }
 }
 
 // ===== ABILITIES UI =====

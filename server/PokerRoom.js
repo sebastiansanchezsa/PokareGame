@@ -90,10 +90,11 @@ const HAND_NAMES = ['Carta Alta', 'Par', 'Doble Par', 'Trío', 'Escalera', 'Colo
 
 // Abilities
 const ABILITIES = {
-  PEEK: { id: 'peek', name: 'Visión', desc: 'Ve la próxima carta comunitaria', cost: 100, cooldown: 3 },
+  PEEK: { id: 'peek', name: 'Visión', desc: 'Ve la próxima carta comunitaria en secreto', cost: 100, cooldown: 3 },
   SHIELD: { id: 'shield', name: 'Escudo', desc: 'Protege tu apuesta de un raise este turno', cost: 150, cooldown: 5 },
-  INTIMIDATE: { id: 'intimidate', name: 'Intimidar', desc: 'Los bots tienen 30% más chance de fold', cost: 75, cooldown: 2 },
-  FORTUNE: { id: 'fortune', name: 'Fortuna', desc: 'Gana +50% del pozo si ganas esta mano', cost: 200, cooldown: 6 },
+  INTIMIDATE: { id: 'intimidate', name: 'Intimidar', desc: 'Revela el suit de una carta del oponente', cost: 75, cooldown: 2 },
+  SWAP: { id: 'swap', name: 'Cambio', desc: 'Cambia una de tus cartas por una nueva del mazo', cost: 200, cooldown: 4 },
+  DOUBLEDOWN: { id: 'doubledown', name: 'Doble o Nada', desc: 'Duplica el pozo actual si ganas, pierdes el doble si no', cost: 0, cooldown: 6 },
 };
 
 export class PokerRoom {
@@ -138,8 +139,8 @@ export class PokerRoom {
       ready: false,
       _needsAction: false,
       shielded: false,
-      fortuneActive: false,
-      abilities: { peek: 0, shield: 0, intimidate: 0, fortune: 0 },
+      doubleDownActive: false,
+      abilities: { peek: 0, shield: 0, intimidate: 0, swap: 0, doubledown: 0 },
     };
     this.players.push(player);
     if (!this.hostId) this.hostId = player.id;
@@ -217,7 +218,7 @@ export class PokerRoom {
       p.lastAction = p.chips <= 0 ? 'ELIMINADO' : '';
       p._needsAction = false;
       p.shielded = false;
-      p.fortuneActive = false;
+      p.doubleDownActive = false;
     });
 
     // Reduce ability cooldowns
@@ -435,10 +436,9 @@ export class PokerRoom {
     // Apply effect
     switch (abilityId) {
       case 'peek': {
-        // Show next community card to this player only
         const nextIdx = this.communityCards.length;
         if (nextIdx < 5 && this.deck.length > 0) {
-          const peekCard = this.deck[this.deck.length - 1]; // Top of deck
+          const peekCard = this.deck[this.deck.length - 1];
           this.sendTo(playerId, { type: 'abilityResult', ability: 'peek', card: peekCard });
         } else {
           this.sendTo(playerId, { type: 'abilityResult', ability: 'peek', card: null });
@@ -448,12 +448,39 @@ export class PokerRoom {
       case 'shield':
         p.shielded = true;
         break;
-      case 'intimidate':
-        // Broadcast to all - visual effect
+      case 'intimidate': {
+        // Reveal the suit of a random card from a random opponent
+        const opponents = this.players.filter(pl => pl.id !== playerId && !pl.folded && pl.holeCards.length > 0);
+        if (opponents.length > 0) {
+          const target = opponents[Math.floor(Math.random() * opponents.length)];
+          const cardIdx = Math.floor(Math.random() * target.holeCards.length);
+          const revealedSuit = target.holeCards[cardIdx].suit;
+          this.sendTo(playerId, {
+            type: 'abilityResult', ability: 'intimidate',
+            targetName: target.name, suit: revealedSuit,
+          });
+        }
         break;
-      case 'fortune':
-        p.fortuneActive = true;
+      }
+      case 'swap': {
+        // Swap one of your cards for a new one from the deck
+        if (p.holeCards.length > 0 && this.deck.length > 0) {
+          const swapIdx = 0; // swap first card
+          const oldCard = p.holeCards[swapIdx];
+          p.holeCards[swapIdx] = this.deck.pop();
+          this.deck.push(oldCard); // put old card back
+          this.sendTo(playerId, {
+            type: 'abilityResult', ability: 'swap',
+            newCards: p.holeCards,
+          });
+        }
         break;
+      }
+      case 'doubledown': {
+        // Mark that pot is doubled for this player if they win
+        p.doubleDownActive = true;
+        break;
+      }
     }
 
     this.broadcast({
@@ -542,10 +569,18 @@ export class PokerRoom {
   endRound(winners, allHands = null) {
     this.roundComplete = true;
 
-    // Fortune bonus
+    // Double Down bonus
     let totalPot = this.pot;
-    winners.forEach(w => {
-      if (w.fortuneActive) totalPot = Math.floor(totalPot * 1.5);
+    const hasDoubleDown = winners.some(w => w.doubleDownActive);
+    if (hasDoubleDown) totalPot = Math.floor(totalPot * 2);
+
+    // Losers with doubleDown lose extra chips
+    this.players.forEach(p => {
+      if (p.doubleDownActive && !winners.includes(p)) {
+        const penalty = Math.min(p.chips, this.pot);
+        p.chips -= penalty;
+      }
+      p.doubleDownActive = false;
     });
 
     const share = Math.floor(totalPot / winners.length);
@@ -560,7 +595,7 @@ export class PokerRoom {
       pot: this.pot,
       allHands,
       eliminated: eliminated.map(e => ({ id: e.id, name: e.name })),
-      fortuneBonus: winners.some(w => w.fortuneActive),
+      doubleDown: hasDoubleDown,
     });
 
     this.broadcastGameState();
@@ -612,7 +647,7 @@ export class PokerRoom {
           // Only show cards during showdown or own cards
           cards: (this.phase === PHASES.SHOWDOWN && !pl.folded) ? pl.holeCards : (pl.id === p.id ? pl.holeCards : null),
           shielded: pl.shielded,
-          fortuneActive: pl.fortuneActive,
+          doubleDownActive: pl.doubleDownActive,
         })),
         yourCards: p.holeCards,
         yourChips: p.chips,

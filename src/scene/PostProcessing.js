@@ -195,6 +195,10 @@ export class PostProcessing {
     this.compositeMat.uniforms.vhsEnabled.value = enabled ? 1.0 : 0.0;
   }
 
+  setBloom(enabled) {
+    this.compositeMat.uniforms.bloomStrength.value = enabled ? 0.8 : 0.0;
+  }
+
   resize(width, height) {
     this.renderTarget.setSize(width, height);
     this.bloomTarget.setSize(width / 2, height / 2);

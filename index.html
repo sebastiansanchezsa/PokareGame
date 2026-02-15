@@ -149,10 +149,28 @@
           <input type="range" id="vol-sfx" min="0" max="100" value="70" class="neon-slider">
         </div>
         <div class="option-group">
+          <label>BRILLO</label>
+          <input type="range" id="vol-brightness" min="30" max="200" value="120" class="neon-slider">
+        </div>
+        <div class="option-group">
           <label>EFECTO VHS</label>
           <div class="option-selector">
             <button class="opt-btn active" data-vhs="on">ON</button>
             <button class="opt-btn" data-vhs="off">OFF</button>
+          </div>
+        </div>
+        <div class="option-group">
+          <label>BLOOM (BRILLO NEÓN)</label>
+          <div class="option-selector">
+            <button class="opt-btn active" data-bloom="on">ON</button>
+            <button class="opt-btn" data-bloom="off">OFF</button>
+          </div>
+        </div>
+        <div class="option-group">
+          <label>RULETA RUSA</label>
+          <div class="option-selector">
+            <button class="opt-btn active" data-roulette="on">ON</button>
+            <button class="opt-btn" data-roulette="off">OFF</button>
           </div>
         </div>
       </div>
@@ -192,11 +210,14 @@
         <button class="ability-btn" data-ability="shield" title="Protege tu apuesta de raises ($150)">
           <span class="ability-icon">&#128737;</span><span class="ability-name">Escudo</span><span class="ability-cost">$150</span>
         </button>
-        <button class="ability-btn" data-ability="intimidate" title="Intimida a los oponentes ($75)">
-          <span class="ability-icon">&#128544;</span><span class="ability-name">Intimidar</span><span class="ability-cost">$75</span>
+        <button class="ability-btn" data-ability="intimidate" title="Revela el palo de una carta del oponente ($75)">
+          <span class="ability-icon">&#128065;</span><span class="ability-name">Intimidar</span><span class="ability-cost">$75</span>
         </button>
-        <button class="ability-btn" data-ability="fortune" title="Gana +50% del pozo si ganas ($200)">
-          <span class="ability-icon">&#127808;</span><span class="ability-name">Fortuna</span><span class="ability-cost">$200</span>
+        <button class="ability-btn" data-ability="swap" title="Cambia una carta por una nueva ($200)">
+          <span class="ability-icon">&#128260;</span><span class="ability-name">Cambio</span><span class="ability-cost">$200</span>
+        </button>
+        <button class="ability-btn" data-ability="doubledown" title="Duplica el pozo si ganas, pierdes el doble si no (GRATIS)">
+          <span class="ability-icon">&#9876;</span><span class="ability-name">Doble</span><span class="ability-cost">GRATIS</span>
         </button>
       </div>
 
@@ -275,6 +296,14 @@
           <span class="tutorial-progress" id="tut-progress">1 / 8</span>
           <button class="neon-btn" id="btn-tut-next">SIGUIENTE &#9654;</button>
         </div>
+      </div>
+    </div>
+
+    <!-- Russian Roulette overlay -->
+    <div id="roulette-overlay" class="hidden">
+      <div class="roulette-content">
+        <div class="roulette-icon">&#128299;</div>
+        <h2 class="roulette-text" id="roulette-text">RULETA RUSA...</h2>
       </div>
     </div>
 
