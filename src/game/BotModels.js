@@ -364,28 +364,30 @@ export class BotModels {
     });
 
     // === POSITION AT TABLE ===
-    // Scale model down to fit table proportions
-    const modelScale = 0.35;
+    // Scale model to fit table proportions (table ~4 units wide)
+    const modelScale = 0.55;
     group.scale.setScalar(modelScale);
 
-    // Push seat outward to the table edge (table rx=2, ry=1.2; seats at rx=1.6, ry=0.95)
-    // Multiply by ~1.45 to reach beyond the table rail
+    // Push seat to table edge: table rx=2, ry=1.2; seats at rx=1.6, ry=0.95
+    // Factor 1.3 puts them right at the rail edge
     const seatPos = pos.seat;
-    const pushFactor = 1.45;
+    const pushFactor = 1.3;
     const px = seatPos.x * pushFactor;
     const pz = seatPos.z * pushFactor;
 
-    // At 0.35 scale, belt local 0.32 becomes 0.112 world units
-    // Table surface at 0.88, so group.y = 0.88 - 0.112 = 0.77
-    group.position.set(px, 0.77, pz);
+    // At 0.55 scale: belt (local 0.32) = 0.176 world units above group origin
+    // Table surface at Y=0.88 → group.y = 0.88 - 0.176 = 0.70
+    group.position.set(px, 0.70, pz);
     // Only rotate around Y axis to face table center
     group.rotation.y = Math.atan2(-px, -pz);
 
     // === NAME TAG ===
-    // Scale name tag inversely so it stays readable despite group scale
     const nameSprite = this.createNameTag(name, neonColor);
-    nameSprite.position.set(0, 1.6, 0);
-    nameSprite.scale.setScalar(1 / modelScale);
+    // Position above head: head at local 0.92, want tag ~0.15 above in world
+    // Local Y = (head + gap) = 0.92 + 0.15/modelScale ≈ 1.19
+    nameSprite.position.set(0, 1.19, 0);
+    // Counter-scale so tag stays readable (0.7 world units wide)
+    nameSprite.scale.setScalar(0.7 / modelScale);
     group.add(nameSprite);
 
     return {
