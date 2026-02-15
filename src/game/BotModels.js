@@ -295,33 +295,33 @@ export class BotModels {
     const upperArmGeo = new THREE.CapsuleGeometry(0.04, 0.22, 4, 8);
     const forearmGeo = new THREE.CapsuleGeometry(0.035, 0.2, 4, 8);
 
-    // Left arm
+    // Left arm - angled forward so forearms rest on table
     const leftUpperArm = new THREE.Mesh(upperArmGeo, jacketMat);
-    leftUpperArm.position.set(-0.26, 0.55, 0.02);
-    leftUpperArm.rotation.z = 0.35;
-    leftUpperArm.rotation.x = -0.3;
+    leftUpperArm.position.set(-0.24, 0.58, 0.06);
+    leftUpperArm.rotation.z = 0.3;
+    leftUpperArm.rotation.x = -0.7;
     leftUpperArm.castShadow = true;
     group.add(leftUpperArm);
 
     const leftForearm = new THREE.Mesh(forearmGeo, jacketMat);
-    leftForearm.position.set(-0.3, 0.3, 0.05);
-    leftForearm.rotation.z = 0.1;
-    leftForearm.rotation.x = -0.8;
+    leftForearm.position.set(-0.18, 0.38, 0.2);
+    leftForearm.rotation.z = 0.05;
+    leftForearm.rotation.x = -1.35;
     leftForearm.castShadow = true;
     group.add(leftForearm);
 
-    // Right arm
+    // Right arm - angled forward so forearms rest on table
     const rightUpperArm = new THREE.Mesh(upperArmGeo, jacketMat);
-    rightUpperArm.position.set(0.26, 0.55, 0.02);
-    rightUpperArm.rotation.z = -0.35;
-    rightUpperArm.rotation.x = -0.3;
+    rightUpperArm.position.set(0.24, 0.58, 0.06);
+    rightUpperArm.rotation.z = -0.3;
+    rightUpperArm.rotation.x = -0.7;
     rightUpperArm.castShadow = true;
     group.add(rightUpperArm);
 
     const rightForearm = new THREE.Mesh(forearmGeo, jacketMat);
-    rightForearm.position.set(0.3, 0.3, 0.05);
-    rightForearm.rotation.z = -0.1;
-    rightForearm.rotation.x = -0.8;
+    rightForearm.position.set(0.18, 0.38, 0.2);
+    rightForearm.rotation.z = -0.05;
+    rightForearm.rotation.x = -1.35;
     rightForearm.castShadow = true;
     group.add(rightForearm);
 
@@ -352,25 +352,27 @@ export class BotModels {
     };
 
     const leftHand = handParts(-1);
-    leftHand.position.set(-0.22, 0.14, -0.1);
+    leftHand.position.set(-0.12, 0.32, 0.28);
+    leftHand.rotation.x = -0.3;
     group.add(leftHand);
 
     const rightHand = handParts(1);
-    rightHand.position.set(0.22, 0.14, -0.1);
+    rightHand.position.set(0.12, 0.32, 0.28);
+    rightHand.rotation.x = -0.3;
     group.add(rightHand);
 
-    // Wristwatch on left hand
+    // Wristwatch on left wrist
     const watchGeo = new THREE.BoxGeometry(0.025, 0.01, 0.03);
     const watchMat = new THREE.MeshStandardMaterial({ color: 0xc8a84e, metalness: 0.8, roughness: 0.2 });
     const watch = new THREE.Mesh(watchGeo, watchMat);
-    watch.position.set(-0.22, 0.18, -0.05);
+    watch.position.set(-0.14, 0.34, 0.22);
     group.add(watch);
 
     // Watch face
     const watchFaceGeo = new THREE.BoxGeometry(0.015, 0.012, 0.015);
     const watchFaceMat = new THREE.MeshStandardMaterial({ color: 0x0a0a15, metalness: 0.3, roughness: 0.2 });
     const watchFace = new THREE.Mesh(watchFaceGeo, watchFaceMat);
-    watchFace.position.set(-0.22, 0.185, -0.05);
+    watchFace.position.set(-0.14, 0.345, 0.22);
     group.add(watchFace);
 
     // Neon lapel pin
@@ -484,7 +486,7 @@ export class BotModels {
 
   // Base positions for head/hands (constants to prevent drift)
   static HEAD_BASE_Y = 0.92;
-  static HAND_BASE_Y = 0.14;
+  static HAND_BASE_Y = 0.32;
 
   update(delta) {
     this.updateRagdolls(delta);
@@ -531,10 +533,14 @@ export class BotModels {
         model.fidgetTimer = 4 + Math.random() * 6;
       }
 
-      // Subtle hand sway
+      // Subtle hand sway (on table)
       const handSway = Math.sin(t * 0.6 + model.breathPhase) * 0.002;
       model.leftHand.position.y = BotModels.HAND_BASE_Y + handSway;
       model.rightHand.position.y = BotModels.HAND_BASE_Y - handSway;
+      // Subtle finger tap
+      const tapL = Math.sin(t * 1.5 + model.breathPhase) * 0.003;
+      model.leftHand.position.z = 0.28 + tapL;
+      model.rightHand.position.z = 0.28 - tapL;
 
       // === REACTION ANIMATIONS (clamped movements) ===
       if (model.reactionAnim) {
@@ -578,8 +584,8 @@ export class BotModels {
     model.torso.position.z = 0;
     model.headGroup.position.y = BotModels.HEAD_BASE_Y;
     model.headGroup.rotation.set(0, 0, 0);
-    model.leftUpperArm.rotation.z = 0.35;
-    model.rightUpperArm.rotation.z = -0.35;
+    model.leftUpperArm.rotation.z = 0.3;
+    model.rightUpperArm.rotation.z = -0.3;
   }
 
   triggerReaction(botIndex, type) {

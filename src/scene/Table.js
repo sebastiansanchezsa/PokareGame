@@ -104,14 +104,20 @@ export class Table {
     }
     uvAttr.needsUpdate = true;
 
-    const mat = new THREE.MeshStandardMaterial({
+    // Multi-material: index 0 = side faces (plain wood), index 1 = top/bottom (textured)
+    const sideMat = new THREE.MeshStandardMaterial({
+      color: 0x5a2d0c,
+      roughness: 0.5,
+      metalness: 0.05,
+    });
+    const topMat = new THREE.MeshStandardMaterial({
       map: woodTex,
       color: 0xffffff,
       roughness: 0.45,
       metalness: 0.05,
     });
 
-    const tableTop = new THREE.Mesh(geo, mat);
+    const tableTop = new THREE.Mesh(geo, [sideMat, topMat]);
     tableTop.rotation.x = -Math.PI / 2;
     tableTop.position.y = 0.85;
     tableTop.castShadow = true;
