@@ -339,8 +339,27 @@
           <button class="mp-btn" id="mp-next">&#9654;&#9654;</button>
         </div>
         <input type="range" id="mp-volume" min="0" max="100" value="50" class="neon-slider mp-vol">
+        <div class="mp-section-label">RADIO 80s</div>
+        <div class="mp-radios">
+          <button class="mp-radio-btn" data-radio="synthwave">Synthwave</button>
+          <button class="mp-radio-btn" data-radio="retrowave">Retrowave</button>
+          <button class="mp-radio-btn" data-radio="chillwave">Chillwave</button>
+          <button class="mp-radio-btn" data-radio="vaporwave">Vaporwave</button>
+        </div>
+        <div class="mp-section-label">YOUTUBE URL</div>
+        <div class="mp-yt-row">
+          <input type="text" id="mp-yt-url" class="neon-input mp-yt-input" placeholder="youtube.com/watch?v=...">
+          <button class="mp-btn mp-yt-add" id="mp-yt-add">+</button>
+        </div>
+        <div class="mp-section-label">SPOTIFY</div>
+        <div class="mp-spotify-row">
+          <button class="mp-btn mp-spotify-btn" id="mp-spotify-link" title="Abrir Spotify">
+            <span style="color:#1db954;font-size:0.8rem">&#9679;</span>
+          </button>
+          <span class="mp-spotify-hint">Abre Spotify y reproduce ahí</span>
+        </div>
         <label class="mp-upload-label">
-          <span>+ Agregar Pista</span>
+          <span>+ Agregar Archivo</span>
           <input type="file" id="mp-file" accept="audio/*" multiple style="display:none">
         </label>
       </div>

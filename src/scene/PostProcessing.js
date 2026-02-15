@@ -102,11 +102,11 @@ export class PostProcessing {
       uniforms: {
         tDiffuse: { value: null },
         tBloom: { value: null },
-        bloomStrength: { value: 0.8 },
+        bloomStrength: { value: 0.9 },
         time: { value: 0 },
         vhsEnabled: { value: 1.0 },
-        chromaticAberration: { value: 0.003 },
-        vignetteIntensity: { value: 0.4 },
+        chromaticAberration: { value: 0.002 },
+        vignetteIntensity: { value: 0.25 },
       },
       vertexShader: `
         varying vec2 vUv;

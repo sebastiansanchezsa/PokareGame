@@ -26,8 +26,8 @@ export class Environment {
   createFloor() {
     const geo = new THREE.PlaneGeometry(this.roomWidth, this.roomDepth);
     const mat = new THREE.MeshStandardMaterial({
-      color: 0x1e0e12,
-      roughness: 0.8,
+      color: 0x3a2228,
+      roughness: 0.75,
       metalness: 0.05,
     });
     const floor = new THREE.Mesh(geo, mat);
@@ -38,27 +38,43 @@ export class Environment {
     // Wooden plank lines
     for (let i = -5; i <= 5; i++) {
       const lineGeo = new THREE.PlaneGeometry(0.015, this.roomDepth);
-      const lineMat = new THREE.MeshBasicMaterial({ color: 0x2a1418, transparent: true, opacity: 0.4 });
+      const lineMat = new THREE.MeshBasicMaterial({ color: 0x4a2a30, transparent: true, opacity: 0.35 });
       const line = new THREE.Mesh(lineGeo, lineMat);
       line.rotation.x = -Math.PI / 2;
       line.position.set(i * 1.2, 0.001, 0);
       this.scene.add(line);
     }
 
-    // Subtle ambient fill light from below to brighten table area
-    const fillLight = new THREE.HemisphereLight(0x1a1025, 0x0a0508, 0.35);
-    this.scene.add(fillLight);
+    // Carpet/rug under table area
+    const rugGeo = new THREE.PlaneGeometry(5, 3.5);
+    const rugMat = new THREE.MeshStandardMaterial({
+      color: 0x2a1528,
+      roughness: 0.95,
+      metalness: 0.0,
+    });
+    const rug = new THREE.Mesh(rugGeo, rugMat);
+    rug.rotation.x = -Math.PI / 2;
+    rug.position.set(0, 0.002, -0.3);
+    rug.receiveShadow = true;
+    this.scene.add(rug);
 
-    // Warm ambient for overall brightness
-    const ambient = new THREE.AmbientLight(0x201218, 0.5);
-    this.scene.add(ambient);
+    // Rug border
+    const rugBorderGeo = new THREE.PlaneGeometry(5.2, 3.7);
+    const rugBorderMat = new THREE.MeshStandardMaterial({
+      color: 0x4a2540,
+      roughness: 0.9,
+    });
+    const rugBorder = new THREE.Mesh(rugBorderGeo, rugBorderMat);
+    rugBorder.rotation.x = -Math.PI / 2;
+    rugBorder.position.set(0, 0.0015, -0.3);
+    this.scene.add(rugBorder);
   }
 
   createWalls() {
     const wallMat = new THREE.MeshStandardMaterial({
-      color: 0x180a18,
-      roughness: 0.85,
-      metalness: 0.02,
+      color: 0x2d1830,
+      roughness: 0.8,
+      metalness: 0.03,
     });
 
     // Back wall
@@ -129,8 +145,8 @@ export class Environment {
   createCeiling() {
     const geo = new THREE.PlaneGeometry(this.roomWidth, this.roomDepth);
     const mat = new THREE.MeshStandardMaterial({
-      color: 0x0c0812,
-      roughness: 0.95,
+      color: 0x1a1220,
+      roughness: 0.9,
     });
     const ceiling = new THREE.Mesh(geo, mat);
     ceiling.rotation.x = Math.PI / 2;
@@ -144,6 +160,7 @@ export class Environment {
 
     // Bar shelf on left wall
     this.createShelf(-this.roomWidth / 2 + 0.3, 2.0, -2);
+    this.createShelf(-this.roomWidth / 2 + 0.3, 2.6, -1);
 
     // Jukebox/music player
     this.createJukebox(this.roomWidth / 2 - 0.8, 0, -3);
@@ -153,6 +170,20 @@ export class Environment {
 
     // Window with neon outside glow (back wall)
     this.createWindow(3, 2.5, -this.roomDepth / 2 + 0.05);
+    this.createWindow(-3, 2.5, -this.roomDepth / 2 + 0.05);
+
+    // Wall sconces
+    this.createSconce(-this.roomWidth / 2 + 0.15, 2.5, 2, Math.PI / 2, 0xff66aa);
+    this.createSconce(this.roomWidth / 2 - 0.15, 2.5, 2, -Math.PI / 2, 0x66aaff);
+    this.createSconce(-this.roomWidth / 2 + 0.15, 2.5, -1, Math.PI / 2, 0xaa44ff);
+    this.createSconce(this.roomWidth / 2 - 0.15, 2.5, -1, -Math.PI / 2, 0xff44aa);
+
+    // Picture frames on back wall
+    this.createFrame(-2.5, 2.5, -this.roomDepth / 2 + 0.06, 0xff2266);
+    this.createFrame(2.5, 2.0, -this.roomDepth / 2 + 0.06, 0x2266ff);
+
+    // Neon clock on right wall
+    this.createNeonClock(this.roomWidth / 2 - 0.06, 3.0, 0);
   }
 
   createNeonSign() {
@@ -314,8 +345,66 @@ export class Environment {
     this.scene.add(outGlow);
   }
 
+  createSconce(x, y, z, rotY, color) {
+    // Small wall bracket
+    const bracketGeo = new THREE.BoxGeometry(0.08, 0.12, 0.06);
+    const bracketMat = new THREE.MeshStandardMaterial({ color: 0x332233, metalness: 0.6, roughness: 0.3 });
+    const bracket = new THREE.Mesh(bracketGeo, bracketMat);
+    bracket.position.set(x, y, z);
+    this.scene.add(bracket);
+
+    // Glow bulb
+    const bulbGeo = new THREE.SphereGeometry(0.03, 8, 8);
+    const bulbMat = new THREE.MeshBasicMaterial({ color });
+    const bulb = new THREE.Mesh(bulbGeo, bulbMat);
+    const offset = rotY > 0 ? 0.08 : -0.08;
+    bulb.position.set(x + offset, y, z);
+    this.scene.add(bulb);
+
+    const light = new THREE.PointLight(color, 0.8, 4);
+    light.position.set(x + offset * 2, y, z);
+    this.scene.add(light);
+  }
+
+  createFrame(x, y, z, accentColor) {
+    const frameGeo = new THREE.BoxGeometry(0.7, 0.5, 0.03);
+    const frameMat = new THREE.MeshStandardMaterial({ color: 0x332222, metalness: 0.4, roughness: 0.5 });
+    const frame = new THREE.Mesh(frameGeo, frameMat);
+    frame.position.set(x, y, z);
+    this.scene.add(frame);
+
+    // Canvas
+    const canvasGeo = new THREE.PlaneGeometry(0.58, 0.38);
+    const canvasMat = new THREE.MeshBasicMaterial({ color: accentColor, transparent: true, opacity: 0.15 });
+    const canvas = new THREE.Mesh(canvasGeo, canvasMat);
+    canvas.position.set(x, y, z + 0.02);
+    this.scene.add(canvas);
+  }
+
+  createNeonClock(x, y, z) {
+    // Clock face
+    const faceGeo = new THREE.CircleGeometry(0.25, 32);
+    const faceMat = new THREE.MeshStandardMaterial({ color: 0x110818, roughness: 0.9 });
+    const face = new THREE.Mesh(faceGeo, faceMat);
+    face.position.set(x, y, z);
+    face.rotation.y = -Math.PI / 2;
+    this.scene.add(face);
+
+    // Neon ring
+    const ringGeo = new THREE.TorusGeometry(0.25, 0.015, 8, 32);
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0x00ffaa });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.position.set(x, y, z);
+    ring.rotation.y = -Math.PI / 2;
+    this.scene.add(ring);
+
+    const clockLight = new THREE.PointLight(0x00ffaa, 0.4, 3);
+    clockLight.position.set(x - 0.3, y, z);
+    this.scene.add(clockLight);
+  }
+
   createFog() {
-    this.scene.fog = new THREE.FogExp2(0x0c0812, 0.045);
+    this.scene.fog = new THREE.FogExp2(0x1a1225, 0.032);
   }
 
   update(time) {

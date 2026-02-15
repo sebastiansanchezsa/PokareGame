@@ -14,6 +14,7 @@ import { MultiplayerRenderer } from './game/MultiplayerRenderer.js';
 import { RussianRoulette } from './game/RussianRoulette.js';
 import { Tutorial } from './ui/Tutorial.js';
 import { HAND_NAMES } from './game/PokerLogic.js';
+import { ParticleEffects } from './game/ParticleEffects.js';
 
 // ===== GLOBALS =====
 let renderer, scene, camera;
@@ -23,6 +24,7 @@ let mpClient = null;
 let mpRenderer = null;
 let russianRoulette = null;
 let tutorial = null;
+let particleEffects = null;
 let clock;
 let gameStarted = false;
 let gameMode = 'none'; // 'single', 'multi', 'none'
@@ -64,11 +66,11 @@ function init() {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.2;
+  renderer.toneMappingExposure = 1.6;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
 
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x050010);
+  scene.background = new THREE.Color(0x120a1a);
   camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 50);
 
   audioManager = new AudioManager();
@@ -82,6 +84,7 @@ function init() {
   botModels = new BotModels(scene);
   mpRenderer = new MultiplayerRenderer(scene, table);
   russianRoulette = new RussianRoulette(scene, camera);
+  particleEffects = new ParticleEffects(scene);
   tutorial = new Tutorial();
 
   window.addEventListener('resize', onResize);
@@ -123,6 +126,7 @@ function animate() {
     playerHands.update(delta);
     botModels.update(delta);
     russianRoulette.update(delta);
+    particleEffects.update(delta);
   }
 
   postProcessing.render(elapsed);
@@ -582,6 +586,7 @@ function setupGameUI() {
     playerTurnState = null;
     disableBettingControls();
     playerHands.playFold();
+    if (particleEffects) particleEffects.foldEffect();
     if (gameMode === 'single') gameManager.playerFold();
     else if (mpClient) mpClient.fold();
   });
@@ -622,6 +627,7 @@ function setupGameUI() {
     playerTurnState = null;
     disableBettingControls();
     playerHands.playBet();
+    if (particleEffects) particleEffects.allInEffect();
     if (gameMode === 'single') gameManager.playerAllIn();
     else if (mpClient) mpClient.allIn();
   });
@@ -822,6 +828,7 @@ function onRoundEnd(result) {
     } else {
       // Reward shop coins for winning
       addShopCoins(Math.floor(result.pot * 0.1));
+      if (particleEffects) particleEffects.winBurst();
     }
 
     document.getElementById('btn-next-round').textContent = 'SIGUIENTE MANO';
@@ -871,6 +878,9 @@ function onMultiplayerRoundEnd(result) {
   // Russian roulette if I lost
   if (!iWon) {
     triggerRussianRoulette(true);
+  } else {
+    if (particleEffects) particleEffects.winBurst();
+    addShopCoins(Math.floor(result.pot * 0.1));
   }
 
   document.getElementById('btn-next-round').textContent = 'SIGUIENTE MANO';
@@ -1116,6 +1126,16 @@ const musicPlayer = {
   tracks: [],
   currentIndex: -1,
   playing: false,
+  radioMode: false,
+  ytIframe: null,
+};
+
+// Free internet radio streams (80s / synthwave / retrowave)
+const radioStations = {
+  synthwave: { name: 'Synthwave FM', url: 'https://stream.synthwave.hu/listen/synthwave/radio.mp3' },
+  retrowave: { name: 'Nightride FM', url: 'https://stream.nightride.fm/nightride.m4a' },
+  chillwave: { name: 'Chillsynth FM', url: 'https://stream.nightride.fm/chillsynth.m4a' },
+  vaporwave: { name: 'Vaporwave FM', url: 'https://stream.nightride.fm/ebsm.m4a' },
 };
 
 function setupMusicPlayerUI() {
@@ -1131,6 +1151,7 @@ function setupMusicPlayerUI() {
     panel.classList.toggle('hidden');
   });
 
+  // File upload
   fileInput.addEventListener('change', (e) => {
     const files = Array.from(e.target.files);
     files.forEach(file => {
@@ -1144,8 +1165,9 @@ function setupMusicPlayerUI() {
     updateMPDisplay();
   });
 
+  // Play / Pause
   playBtn.addEventListener('click', () => {
-    if (!musicPlayer.audio || musicPlayer.tracks.length === 0) return;
+    if (!musicPlayer.audio || (musicPlayer.tracks.length === 0 && !musicPlayer.radioMode)) return;
     if (musicPlayer.playing) {
       musicPlayer.audio.pause();
       musicPlayer.playing = false;
@@ -1157,30 +1179,123 @@ function setupMusicPlayerUI() {
     }
   });
 
+  // Prev / Next
   prevBtn.addEventListener('click', () => {
     if (musicPlayer.tracks.length === 0) return;
+    musicPlayer.radioMode = false;
     musicPlayer.currentIndex = (musicPlayer.currentIndex - 1 + musicPlayer.tracks.length) % musicPlayer.tracks.length;
     loadTrack(musicPlayer.currentIndex);
     if (musicPlayer.playing) musicPlayer.audio.play().catch(() => {});
     updateMPDisplay();
+    clearActiveRadio();
   });
 
   nextBtn.addEventListener('click', () => {
     if (musicPlayer.tracks.length === 0) return;
+    musicPlayer.radioMode = false;
     musicPlayer.currentIndex = (musicPlayer.currentIndex + 1) % musicPlayer.tracks.length;
     loadTrack(musicPlayer.currentIndex);
     if (musicPlayer.playing) musicPlayer.audio.play().catch(() => {});
     updateMPDisplay();
+    clearActiveRadio();
   });
 
   volSlider.addEventListener('input', (e) => {
     if (musicPlayer.audio) musicPlayer.audio.volume = e.target.value / 100;
   });
+
+  // Radio stations
+  document.querySelectorAll('.mp-radio-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const stationId = btn.dataset.radio;
+      const station = radioStations[stationId];
+      if (!station) return;
+
+      clearActiveRadio();
+      btn.classList.add('active');
+
+      // Stop current and switch to radio stream
+      if (musicPlayer.audio) { musicPlayer.audio.pause(); }
+      stopYTIframe();
+      musicPlayer.audio = new Audio(station.url);
+      musicPlayer.audio.volume = (volSlider.value || 50) / 100;
+      musicPlayer.audio.crossOrigin = 'anonymous';
+      musicPlayer.radioMode = true;
+      musicPlayer.playing = true;
+      musicPlayer.audio.play().catch(() => {
+        showMessage('No se pudo conectar a la radio');
+      });
+      document.getElementById('mp-now').textContent = station.name;
+      document.getElementById('mp-play').innerHTML = '&#9646;&#9646;';
+    });
+  });
+
+  // YouTube URL
+  document.getElementById('mp-yt-add').addEventListener('click', () => {
+    const input = document.getElementById('mp-yt-url');
+    const url = input.value.trim();
+    if (!url) return;
+    const videoId = extractYTVideoId(url);
+    if (!videoId) {
+      showMessage('URL de YouTube no válida');
+      return;
+    }
+    playYouTubeAudio(videoId);
+    input.value = '';
+  });
+
+  // Spotify link
+  document.getElementById('mp-spotify-link').addEventListener('click', () => {
+    window.open('https://open.spotify.com', '_blank');
+  });
+}
+
+function clearActiveRadio() {
+  document.querySelectorAll('.mp-radio-btn').forEach(b => b.classList.remove('active'));
+}
+
+function extractYTVideoId(url) {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+    /^([a-zA-Z0-9_-]{11})$/,
+  ];
+  for (const p of patterns) {
+    const m = url.match(p);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+function playYouTubeAudio(videoId) {
+  // Use an invisible YouTube iframe embed to play audio
+  stopYTIframe();
+  if (musicPlayer.audio) { musicPlayer.audio.pause(); musicPlayer.playing = false; }
+  clearActiveRadio();
+
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;pointer-events:none';
+  iframe.allow = 'autoplay';
+  iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=0`;
+  document.body.appendChild(iframe);
+  musicPlayer.ytIframe = iframe;
+  musicPlayer.radioMode = true;
+  musicPlayer.playing = true;
+  document.getElementById('mp-now').textContent = `YouTube: ${videoId}`;
+  document.getElementById('mp-play').innerHTML = '&#9646;&#9646;';
+}
+
+function stopYTIframe() {
+  if (musicPlayer.ytIframe) {
+    musicPlayer.ytIframe.remove();
+    musicPlayer.ytIframe = null;
+  }
 }
 
 function loadTrack(idx) {
   if (idx < 0 || idx >= musicPlayer.tracks.length) return;
+  stopYTIframe();
   if (musicPlayer.audio) { musicPlayer.audio.pause(); musicPlayer.audio.src = ''; }
+  musicPlayer.radioMode = false;
   musicPlayer.audio = new Audio(musicPlayer.tracks[idx].url);
   musicPlayer.audio.volume = (document.getElementById('mp-volume')?.value || 50) / 100;
   musicPlayer.audio.addEventListener('ended', () => {
@@ -1195,6 +1310,7 @@ function loadTrack(idx) {
 function updateMPDisplay() {
   const now = document.getElementById('mp-now');
   if (!now) return;
+  if (musicPlayer.radioMode) return; // Don't overwrite radio station name
   if (musicPlayer.tracks.length === 0) {
     now.textContent = 'Sin pista';
   } else {
