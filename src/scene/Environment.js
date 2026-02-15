@@ -26,9 +26,9 @@ export class Environment {
   createFloor() {
     const geo = new THREE.PlaneGeometry(this.roomWidth, this.roomDepth);
     const mat = new THREE.MeshStandardMaterial({
-      color: 0x1a0a1a,
-      roughness: 0.7,
-      metalness: 0.1,
+      color: 0x1e0e12,
+      roughness: 0.8,
+      metalness: 0.05,
     });
     const floor = new THREE.Mesh(geo, mat);
     floor.rotation.x = -Math.PI / 2;
@@ -37,20 +37,28 @@ export class Environment {
 
     // Wooden plank lines
     for (let i = -5; i <= 5; i++) {
-      const lineGeo = new THREE.PlaneGeometry(0.02, this.roomDepth);
-      const lineMat = new THREE.MeshBasicMaterial({ color: 0x2a1a2a });
+      const lineGeo = new THREE.PlaneGeometry(0.015, this.roomDepth);
+      const lineMat = new THREE.MeshBasicMaterial({ color: 0x2a1418, transparent: true, opacity: 0.4 });
       const line = new THREE.Mesh(lineGeo, lineMat);
       line.rotation.x = -Math.PI / 2;
       line.position.set(i * 1.2, 0.001, 0);
       this.scene.add(line);
     }
+
+    // Subtle ambient fill light from below to brighten table area
+    const fillLight = new THREE.HemisphereLight(0x1a1025, 0x0a0508, 0.35);
+    this.scene.add(fillLight);
+
+    // Warm ambient for overall brightness
+    const ambient = new THREE.AmbientLight(0x201218, 0.5);
+    this.scene.add(ambient);
   }
 
   createWalls() {
     const wallMat = new THREE.MeshStandardMaterial({
-      color: 0x15081a,
-      roughness: 0.9,
-      metalness: 0.0,
+      color: 0x180a18,
+      roughness: 0.85,
+      metalness: 0.02,
     });
 
     // Back wall
@@ -96,6 +104,8 @@ export class Environment {
     this.createNeonStrip(-this.roomWidth / 2 + 0.01, 0.05, 0, Math.PI / 2, this.roomDepth, 0xff00ff);
     this.createNeonStrip(this.roomWidth / 2 - 0.01, 0.05, 0, -Math.PI / 2, this.roomDepth, 0x00ccff);
     this.createNeonStrip(0, 0.05, -this.roomDepth / 2 + 0.01, 0, this.roomWidth, 0xff00ff);
+    // Subtle front wall strip for depth
+    this.createNeonStrip(0, 0.05, this.roomDepth / 2 - 0.01, Math.PI, this.roomWidth, 0x4400aa);
   }
 
   createNeonStrip(x, y, z, rotY, length, color) {
@@ -119,7 +129,7 @@ export class Environment {
   createCeiling() {
     const geo = new THREE.PlaneGeometry(this.roomWidth, this.roomDepth);
     const mat = new THREE.MeshStandardMaterial({
-      color: 0x0a0510,
+      color: 0x0c0812,
       roughness: 0.95,
     });
     const ceiling = new THREE.Mesh(geo, mat);
@@ -176,7 +186,7 @@ export class Environment {
     });
 
     // Sign glow light
-    const signLight = new THREE.PointLight(0xff6ec7, 2, 6);
+    const signLight = new THREE.PointLight(0xff6ec7, 2.5, 7);
     signLight.position.set(0, 3, -this.roomDepth / 2 + 1);
     signLight.castShadow = true;
     this.scene.add(signLight);
@@ -264,8 +274,8 @@ export class Environment {
     bulb.position.set(x, y - 1.1, z);
     this.scene.add(bulb);
 
-    // Main table light
-    const lampLight = new THREE.SpotLight(0xffcc88, 3, 6, Math.PI / 4, 0.5, 1);
+    // Main table light - warm and bright
+    const lampLight = new THREE.SpotLight(0xffd699, 4, 7, Math.PI / 3.5, 0.4, 0.8);
     lampLight.position.set(x, y - 1.0, z);
     lampLight.target.position.set(x, 0, z);
     lampLight.castShadow = true;
@@ -273,6 +283,11 @@ export class Environment {
     lampLight.shadow.mapSize.height = 1024;
     this.scene.add(lampLight);
     this.scene.add(lampLight.target);
+
+    // Secondary softer fill from lamp
+    const fillSpot = new THREE.PointLight(0xffddaa, 1.2, 5);
+    fillSpot.position.set(x, y - 1.2, z);
+    this.scene.add(fillSpot);
   }
 
   createWindow(x, y, z) {
@@ -300,7 +315,7 @@ export class Environment {
   }
 
   createFog() {
-    this.scene.fog = new THREE.FogExp2(0x0a0510, 0.06);
+    this.scene.fog = new THREE.FogExp2(0x0c0812, 0.045);
   }
 
   update(time) {

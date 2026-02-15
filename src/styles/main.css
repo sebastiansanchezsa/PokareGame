@@ -762,42 +762,6 @@ body {
 .player-avatar-mini img { width: 100%; height: 100%; object-fit: cover; }
 .hud-bottom .player-info { display: flex; align-items: center; }
 
-/* ===== ABILITIES BAR ===== */
-.abilities-bar {
-  position: absolute;
-  right: 20px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  pointer-events: auto;
-}
-.ability-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 0.5rem;
-  background: rgba(10,5,20,0.7);
-  border: 1px solid rgba(138,0,255,0.4);
-  color: #bb88ff;
-  cursor: pointer;
-  transition: all 0.3s;
-  border-radius: 4px;
-  width: 70px;
-}
-.ability-btn:hover {
-  border-color: #bb88ff;
-  box-shadow: 0 0 20px rgba(138,0,255,0.4);
-  background: rgba(138,0,255,0.15);
-}
-.ability-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-.ability-btn.on-cooldown { border-color: rgba(100,100,100,0.3); color: rgba(150,150,150,0.5); }
-.ability-icon { font-size: 1.3rem; }
-.ability-name { font-family: 'Orbitron', sans-serif; font-size: 0.5rem; letter-spacing: 0.1em; }
-.ability-cost { font-size: 0.55rem; color: #ffd700; }
-
 /* ===== CHAT BOX ===== */
 .chat-box {
   position: absolute;
