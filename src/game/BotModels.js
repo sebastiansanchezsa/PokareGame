@@ -364,16 +364,28 @@ export class BotModels {
     });
 
     // === POSITION AT TABLE ===
-    // Place model so belt (local Y ~0.32) aligns with table edge (~0.88)
-    // group.y = 0.88 - 0.32 = 0.56
+    // Scale model down to fit table proportions
+    const modelScale = 0.35;
+    group.scale.setScalar(modelScale);
+
+    // Push seat outward to the table edge (table rx=2, ry=1.2; seats at rx=1.6, ry=0.95)
+    // Multiply by ~1.45 to reach beyond the table rail
     const seatPos = pos.seat;
-    group.position.set(seatPos.x, 0.56, seatPos.z);
-    // Only rotate around Y axis to face table center — DO NOT use lookAt
-    group.rotation.y = Math.atan2(-seatPos.x, -seatPos.z);
+    const pushFactor = 1.45;
+    const px = seatPos.x * pushFactor;
+    const pz = seatPos.z * pushFactor;
+
+    // At 0.35 scale, belt local 0.32 becomes 0.112 world units
+    // Table surface at 0.88, so group.y = 0.88 - 0.112 = 0.77
+    group.position.set(px, 0.77, pz);
+    // Only rotate around Y axis to face table center
+    group.rotation.y = Math.atan2(-px, -pz);
 
     // === NAME TAG ===
+    // Scale name tag inversely so it stays readable despite group scale
     const nameSprite = this.createNameTag(name, neonColor);
-    nameSprite.position.set(0, 1.15, 0);
+    nameSprite.position.set(0, 1.6, 0);
+    nameSprite.scale.setScalar(1 / modelScale);
     group.add(nameSprite);
 
     return {
