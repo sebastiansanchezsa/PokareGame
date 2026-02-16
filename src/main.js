@@ -11,7 +11,6 @@ import { PlayerHands } from './game/PlayerHands.js';
 import { BotModels } from './game/BotModels.js';
 import { MultiplayerClient } from './network/MultiplayerClient.js';
 import { MultiplayerRenderer } from './game/MultiplayerRenderer.js';
-import { RussianRoulette } from './game/RussianRoulette.js';
 import { Tutorial } from './ui/Tutorial.js';
 import { HAND_NAMES } from './game/PokerLogic.js';
 import { ParticleEffects } from './game/ParticleEffects.js';
@@ -83,7 +82,6 @@ function init() {
   playerHands = new PlayerHands(scene, camera);
   botModels = new BotModels(scene);
   mpRenderer = new MultiplayerRenderer(scene, table);
-  russianRoulette = new RussianRoulette(scene, camera);
   particleEffects = new ParticleEffects(scene);
   tutorial = new Tutorial();
 
@@ -124,9 +122,7 @@ function animate() {
     if (gameMode === 'single') gameManager.update(delta);
     if (gameMode === 'multi') mpRenderer.update(delta);
     playerHands.update(delta);
-    botModels.update(delta);
-    russianRoulette.update(delta);
-    particleEffects.update(delta);
+    botModels.update(delta);    particleEffects.update(delta);
   }
 
   postProcessing.render(elapsed);

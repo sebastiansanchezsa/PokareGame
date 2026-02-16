@@ -110,64 +110,6 @@ export class BotModels {
 
     // === BODY PARTS ===
 
-    // Lower torso / waist
-    const waistGeo = new THREE.BoxGeometry(0.32, 0.15, 0.18);
-    const waist = new THREE.Mesh(waistGeo, jacketMat);
-    waist.position.y = 0.35;
-    waist.castShadow = true;
-    group.add(waist);
-
-    // Belt
-    const beltGeo = new THREE.BoxGeometry(0.33, 0.025, 0.19);
-    const beltMat = new THREE.MeshStandardMaterial({ color: 0x1a1210, roughness: 0.4, metalness: 0.3 });
-    const belt = new THREE.Mesh(beltGeo, beltMat);
-    belt.position.y = 0.32;
-    group.add(belt);
-
-    // Belt buckle
-    const buckleGeo = new THREE.BoxGeometry(0.035, 0.025, 0.015);
-    const buckleMat = new THREE.MeshStandardMaterial({ color: 0xc8a84e, metalness: 0.8, roughness: 0.2 });
-    const buckle = new THREE.Mesh(buckleGeo, buckleMat);
-    buckle.position.set(0, 0.32, 0.1);
-    group.add(buckle);
-
-    // Upper torso / jacket
-    const torsoGeo = new THREE.BoxGeometry(0.38, 0.35, 0.2);
-    const torso = new THREE.Mesh(torsoGeo, jacketMat);
-    torso.position.y = 0.58;
-    torso.castShadow = true;
-    group.add(torso);
-
-    // Jacket lapels (V-shape)
-    const lapelLGeo = new THREE.BoxGeometry(0.06, 0.2, 0.015);
-    const lapelL = new THREE.Mesh(lapelLGeo, lapelMat);
-    lapelL.position.set(-0.1, 0.62, 0.105);
-    lapelL.rotation.z = 0.15;
-    group.add(lapelL);
-
-    const lapelR = new THREE.Mesh(lapelLGeo, lapelMat);
-    lapelR.position.set(0.1, 0.62, 0.105);
-    lapelR.rotation.z = -0.15;
-    group.add(lapelR);
-
-    // Shirt visible in V
-    const shirtGeo = new THREE.BoxGeometry(0.12, 0.18, 0.01);
-    const shirt = new THREE.Mesh(shirtGeo, shirtMat);
-    shirt.position.set(0, 0.64, 0.1);
-    group.add(shirt);
-
-    // Tie
-    const tieGeo = new THREE.BoxGeometry(0.04, 0.2, 0.012);
-    const tie = new THREE.Mesh(tieGeo, tieMat);
-    tie.position.set(0, 0.58, 0.108);
-    group.add(tie);
-
-    // Tie knot
-    const knotGeo = new THREE.SphereGeometry(0.018, 6, 6);
-    const knot = new THREE.Mesh(knotGeo, tieMat);
-    knot.position.set(0, 0.72, 0.11);
-    group.add(knot);
-
     // Shoulders (rounded)
     [-1, 1].forEach(side => {
       const shoulderGeo = new THREE.SphereGeometry(0.065, 8, 8);
@@ -177,74 +119,6 @@ export class BotModels {
       group.add(shoulder);
     });
 
-    // Neck
-    const neckGeo = new THREE.CylinderGeometry(0.045, 0.05, 0.08, 8);
-    const neck = new THREE.Mesh(neckGeo, skinMat);
-    neck.position.y = 0.79;
-    group.add(neck);
-
-    // Shirt collar
-    const collarGeo = new THREE.BoxGeometry(0.18, 0.04, 0.14);
-    const collar = new THREE.Mesh(collarGeo, shirtMat);
-    collar.position.set(0, 0.76, 0.02);
-    group.add(collar);
-
-    // === HEAD GROUP (animated separately) ===
-    const headGroup = new THREE.Group();
-    headGroup.position.y = 0.92;
-
-    // Head (slightly oval)
-    const headGeo = new THREE.SphereGeometry(0.115, 14, 12);
-    const head = new THREE.Mesh(headGeo, skinMat);
-    head.scale.set(1, 1.05, 0.95);
-    head.castShadow = true;
-    headGroup.add(head);
-
-    // Nose
-    const noseGeo = new THREE.ConeGeometry(0.015, 0.03, 4);
-    const nose = new THREE.Mesh(noseGeo, skinMat);
-    nose.position.set(0, -0.01, 0.11);
-    nose.rotation.x = -Math.PI / 2;
-    headGroup.add(nose);
-
-    // Ears
-    [-1, 1].forEach(side => {
-      const earGeo = new THREE.SphereGeometry(0.02, 6, 6);
-      const ear = new THREE.Mesh(earGeo, skinMat);
-      ear.position.set(side * 0.115, 0, 0);
-      ear.scale.set(0.6, 1, 0.8);
-      headGroup.add(ear);
-    });
-
-    // Mouth line
-    const mouthGeo = new THREE.BoxGeometry(0.04, 0.005, 0.005);
-    const mouthMat = new THREE.MeshStandardMaterial({ color: 0x8a4030, roughness: 0.9 });
-    const mouth = new THREE.Mesh(mouthGeo, mouthMat);
-    mouth.position.set(0, -0.045, 0.1);
-    headGroup.add(mouth);
-
-    // Eyebrows
-    [-1, 1].forEach(side => {
-      const browGeo = new THREE.BoxGeometry(0.04, 0.008, 0.008);
-      const brow = new THREE.Mesh(browGeo, hairMat);
-      brow.position.set(side * 0.04, 0.035, 0.1);
-      brow.rotation.z = side * -0.1;
-      headGroup.add(brow);
-    });
-
-    // Sunglasses bridge
-    const bridgeGeo = new THREE.BoxGeometry(0.22, 0.012, 0.02);
-    const bridge = new THREE.Mesh(bridgeGeo, glassesMat);
-    bridge.position.set(0, 0.01, 0.108);
-    headGroup.add(bridge);
-
-    // Sunglasses lenses
-    [-1, 1].forEach(side => {
-      const lensGeo = new THREE.BoxGeometry(0.072, 0.04, 0.015);
-      const lens = new THREE.Mesh(lensGeo, lenseMat);
-      lens.position.set(side * 0.048, 0.005, 0.112);
-      headGroup.add(lens);
-    });
 
     // Temple arms
     [-1, 1].forEach(side => {
@@ -461,28 +335,50 @@ export class BotModels {
     };
   }
 
-  createNameTag(name, color) {
-    const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 64;
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, 256, 64);
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.beginPath();
-    ctx.roundRect(20, 10, 216, 44, 8);
-    ctx.fill();
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 24px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(name, 128, 32);
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
-    const sprite = new THREE.Sprite(mat);
-    sprite.scale.set(0.5, 0.125, 1);
-    return sprite;
-  }
+createNameTag(name, color) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+
+  ctx.clearRect(0, 0, 256, 64);
+
+  // Fallback para roundRect
+  const r = 8;
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.beginPath();
+  ctx.moveTo(20 + r, 10);
+  ctx.lineTo(236 - r, 10);
+  ctx.quadraticCurveTo(236, 10, 236, 10 + r);
+  ctx.lineTo(236, 54 - r);
+  ctx.quadraticCurveTo(236, 54, 236 - r, 54);
+  ctx.lineTo(20 + r, 54);
+  ctx.quadraticCurveTo(20, 54, 20, 54 - r);
+  ctx.lineTo(20, 10 + r);
+  ctx.quadraticCurveTo(20, 10, 20 + r, 10);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 24px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(name, 128, 32);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+
+  const mat = new THREE.SpriteMaterial({
+    map: tex,
+    transparent: true,
+  });
+
+  const sprite = new THREE.Sprite(mat);
+  sprite.userData._texture = tex; // para liberar luego
+
+  return sprite;
+}
+
 
   // Base positions for head/hands (constants to prevent drift)
   static HEAD_BASE_Y = 0.92;
@@ -819,64 +715,75 @@ export class BotModels {
     }
   }
 
-  updateRagdolls(delta) {
-    if (!this.ragdolls) return;
-    this.ragdolls = this.ragdolls.filter(ragdoll => {
-      ragdoll.age += delta;
-      if (ragdoll.age > ragdoll.maxAge) {
-        ragdoll.pieces.forEach(p => {
-          p.mesh.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); });
-          this.scene.remove(p.mesh);
-        });
-        return false;
-      }
-      ragdoll.pieces.forEach(p => {
-        p.age += delta;
-        // Apply velocity
-        p.mesh.position.x += p.velocity.x * delta;
-        p.mesh.position.y += p.velocity.y * delta;
-        p.mesh.position.z += p.velocity.z * delta;
-        // Gravity
-        p.velocity.y -= 9.8 * delta;
-        // Floor collision
-        if (p.mesh.position.y < 0.02) {
-          p.mesh.position.y = 0.02;
-          p.velocity.y *= -0.3; // bounce
-          p.velocity.x *= 0.7;
-          p.velocity.z *= 0.7;
-          p.angularVel.multiplyScalar(0.5);
-        }
-        // Angular rotation
-        p.mesh.rotation.x += p.angularVel.x * delta;
-        p.mesh.rotation.y += p.angularVel.y * delta;
-        p.mesh.rotation.z += p.angularVel.z * delta;
-        // Fade out near end
-        const fadeStart = ragdoll.maxAge - 1;
-        if (ragdoll.age > fadeStart) {
-          const fade = 1 - (ragdoll.age - fadeStart) / 1;
-          p.mesh.traverse(c => {
-            if (c.material && !c.material._fadeDone) {
-              c.material.transparent = true;
-              c.material.opacity = fade;
-            }
-          });
-        }
-      });
-      return true;
-    });
-  }
+updateRagdolls(delta) {
+  if (!this.ragdolls) return;
 
-  dispose() {
-    this.models.forEach(model => {
-      model.group.traverse(child => {
-        if (child.geometry) child.geometry.dispose();
-        if (child.material) {
-          if (child.material.map) child.material.map.dispose();
-          child.material.dispose();
-        }
+  this.ragdolls = this.ragdolls.filter(ragdoll => {
+    ragdoll.age += delta;
+
+    if (ragdoll.age > ragdoll.maxAge) {
+      ragdoll.pieces.forEach(p => {
+        p.mesh.traverse(c => {
+          if (c.geometry) c.geometry.dispose();
+          if (c.material) {
+            if (c.material.map) c.material.map.dispose();
+            c.material.dispose();
+          }
+        });
+        this.scene.remove(p.mesh);
       });
-      this.scene.remove(model.group);
+      return false;
+    }
+
+    ragdoll.pieces.forEach(p => {
+      p.age += delta;
+
+      p.mesh.position.addScaledVector(p.velocity, delta);
+      p.velocity.y -= 9.8 * delta;
+
+      if (p.mesh.position.y < 0.02) {
+        p.mesh.position.y = 0.02;
+        p.velocity.y *= -0.3;
+        p.velocity.x *= 0.7;
+        p.velocity.z *= 0.7;
+        p.angularVel.multiplyScalar(0.5);
+      }
+
+      p.mesh.rotation.x += p.angularVel.x * delta;
+      p.mesh.rotation.y += p.angularVel.y * delta;
+      p.mesh.rotation.z += p.angularVel.z * delta;
+
+      const fadeStart = ragdoll.maxAge - 1;
+      if (ragdoll.age > fadeStart) {
+        const fade = 1 - (ragdoll.age - fadeStart);
+        p.mesh.traverse(c => {
+          if (c.material && c.material.opacity !== undefined) {
+            c.material.transparent = true;
+            c.material.opacity = Math.max(0, fade);
+          }
+        });
+      }
     });
+
+    return true;
+  });
+}
+
+
+dispose() {
+  this.models.forEach(m => {
+    m.group.traverse(c => {
+      if (c.geometry) c.geometry.dispose();
+      if (c.material) {
+        if (c.material.map) c.material.map.dispose();
+        c.material.dispose();
+      }
+      if (c.userData && c.userData._texture) {
+        c.userData._texture.dispose();
+      }
+    });
+    this.scene.remove(m.group);
+  });
     this.models = [];
     this.chairs.forEach(chair => {
       chair.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); });

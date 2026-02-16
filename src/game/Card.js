@@ -60,8 +60,8 @@ export class Card3D {
     const materials = [
       edgeMat, // right
       edgeMat, // left
-      new THREE.MeshStandardMaterial({ map: frontTexture, roughness: 0.82, metalness: 0.0, color: 0x999999 }), // top (face)
-      new THREE.MeshStandardMaterial({ map: backTexture, roughness: 0.78, metalness: 0.0, color: 0x999999 }), // bottom (back)
+      new THREE.MeshStandardMaterial({ map: frontTexture, roughness: 0.82, metalness: 0.0, color: 0xffffff }), // top (face)
+      new THREE.MeshStandardMaterial({ map: backTexture, roughness: 0.78, metalness: 0.0, color: 0xffffff }), // bottom (back)
       edgeMat, // front
       edgeMat, // back
     ];

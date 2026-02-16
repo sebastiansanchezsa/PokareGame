@@ -38,6 +38,12 @@ export class Deck {
     return this.cards[this.cards.length - 1];
   }
 
+  peekAt(offset = 0) {
+    const idx = this.cards.length - 1 - offset;
+    if (idx < 0 || idx >= this.cards.length) return null;
+    return this.cards[idx];
+  }
+
   deal() {
     if (this.cards.length === 0) return null;
     const card = this.cards.pop();

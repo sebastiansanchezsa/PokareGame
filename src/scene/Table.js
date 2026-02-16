@@ -119,7 +119,7 @@ export class Table {
 
     const tableTop = new THREE.Mesh(geo, [sideMat, topMat]);
     tableTop.rotation.x = -Math.PI / 2;
-    tableTop.position.y = 0.85;
+    tableTop.position.y = 0.83;
     tableTop.castShadow = true;
     tableTop.receiveShadow = true;
     this.group.add(tableTop);
