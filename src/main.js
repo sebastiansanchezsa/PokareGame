@@ -54,23 +54,27 @@ const mpSettings = {
   abilities: true,
 };
 
+// ===== MOBILE DETECTION =====
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  || ('ontouchstart' in window && window.innerWidth < 1024);
+
 // ===== INIT =====
 function init() {
   clock = new THREE.Clock();
 
   const canvas = document.getElementById('game-canvas');
-  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: !isMobile, powerPreference: isMobile ? 'default' : 'high-performance' });
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = isMobile ? THREE.BasicShadowMap : THREE.PCFSoftShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.1;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
 
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x120a1a);
-  camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 50);
+  camera = new THREE.PerspectiveCamera(isMobile ? 65 : 60, window.innerWidth / window.innerHeight, 0.1, 50);
 
   audioManager = new AudioManager();
   environment = new Environment(scene);
@@ -86,6 +90,23 @@ function init() {
   tutorial = new Tutorial();
 
   window.addEventListener('resize', onResize);
+  window.addEventListener('orientationchange', () => { setTimeout(onResize, 150); });
+
+  // Prevent default touch behaviors on game canvas (zoom, scroll)
+  if (isMobile) {
+    canvas.addEventListener('touchmove', (e) => {
+      // Only prevent default on the canvas, not on UI elements
+      if (e.target === canvas) e.preventDefault();
+    }, { passive: false });
+    // Add mobile class to body for CSS
+    document.body.classList.add('is-mobile');
+    // Disable heavy post-processing on mobile by default
+    settings.vhsEnabled = false;
+    settings.bloomEnabled = false;
+    postProcessing.setVHS(false);
+    if (postProcessing.setBloom) postProcessing.setBloom(false);
+  }
+
   setupMenuUI();
   setupProfileUI();
   setupLobbyUI();
@@ -105,6 +126,7 @@ function onResize() {
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
   renderer.setSize(w, h);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
   postProcessing.resize(w, h);
 }
 

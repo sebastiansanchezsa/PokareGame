@@ -1644,21 +1644,262 @@ body {
   text-shadow: 0 0 8px rgba(255,215,0,0.5);
 }
 
+/* ===== MOBILE / TOUCH HELPERS ===== */
+.mobile-only { display: none !important; }
+
 /* Responsive */
 @media (max-width: 768px) {
-  .menu-title h1 { font-size: 3rem; }
-  .neon-btn { min-width: 250px; font-size: 0.9rem; padding: 0.8rem 2rem; }
-  .action-btn { padding: 0.5rem 0.8rem; font-size: 0.65rem; }
-  .raise-slider { width: 80px; }
-  .lobby-options { flex-direction: column; align-items: center; }
-  .lobby-divider { padding-top: 0; }
-  .abilities-panel { right: 3px; }
-  .abilities-grid { grid-template-columns: repeat(4, 44px); max-height: 240px; gap: 3px; padding: 4px; }
-  .ability-btn { width: 42px; padding: 3px 1px; }
-  .chat-box { width: 200px; }
-  .shop-layout { flex-direction: column; }
-  .shop-preview-panel { flex: 0 0 auto; }
-  #shop-preview-canvas { height: 180px; }
-  .shop-grid { grid-template-columns: repeat(2, 1fr); max-height: 260px; }
-  .mp-panel { width: 180px; }
+  /* -- Prevent overscroll / pull-to-refresh -- */
+  body {
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+    touch-action: manipulation;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+  }
+
+  .mobile-only { display: flex !important; }
+
+  /* -- MENU SCREENS -- */
+  .menu-title h1 { font-size: 2.6rem; letter-spacing: 0.15em; }
+  .subtitle { font-size: 0.85rem; letter-spacing: 0.4em; }
+  .menu-buttons { margin-top: 2rem; gap: 0.7rem; width: 90%; max-width: 320px; }
+  .neon-btn {
+    min-width: unset;
+    width: 100%;
+    font-size: 0.85rem;
+    padding: 0.8rem 1.5rem;
+    /* Larger tap target */
+    min-height: 48px;
+  }
+  .menu-footer { margin-top: 2rem; font-size: 1.4rem; }
+  .section-title { font-size: 1.4rem; margin-bottom: 1.2rem; }
+
+  /* -- SETUP / OPTIONS -- */
+  .setup-options { gap: 1rem; margin-bottom: 1.2rem; }
+  .option-group label { font-size: 0.7rem; }
+  .opt-btn { padding: 0.5rem 1rem; font-size: 0.8rem; min-height: 40px; }
+  .setup-buttons { flex-direction: column; align-items: center; width: 90%; max-width: 300px; gap: 0.6rem; }
+  .setup-buttons .neon-btn { width: 100%; }
+  .neon-slider { width: 200px; height: 6px; }
+  .neon-slider::-webkit-slider-thumb { width: 24px; height: 24px; }
+  .neon-input { width: 220px; font-size: 0.9rem; padding: 0.6rem 1rem; }
+  .neon-input.room-code { font-size: 1.4rem; width: 200px; }
+
+  /* -- PROFILE -- */
+  .avatar-preview { width: 80px; height: 80px; }
+  .avatar-placeholder { font-size: 2rem; }
+
+  /* -- LOBBY -- */
+  .lobby-options { flex-direction: column; align-items: center; gap: 1rem; }
+  .lobby-divider { padding-top: 0; font-size: 1rem; }
+  .lobby-box { min-width: unset; width: 90%; max-width: 300px; padding: 1rem; }
+
+  /* -- ROOM WAITING -- */
+  .room-code-big { font-size: 1.8rem; letter-spacing: 0.3em; }
+  .room-players { gap: 0.6rem; }
+  .room-player-card { padding: 0.6rem 0.8rem; min-width: 80px; }
+  .room-player-avatar { width: 40px; height: 40px; font-size: 1.2rem; }
+
+  /* -- GAME HUD -- */
+  .hud-top { top: 10px; gap: 0.3rem; }
+  .pot-display { padding: 0.3rem 1.2rem; }
+  .pot-label { font-size: 0.55rem; }
+  .pot-value { font-size: 1.3rem; }
+  .round-display { font-size: 0.6rem; }
+
+  /* Player tags */
+  .hud-players { top: 65px; gap: 0.5rem; padding: 0 0.5rem; flex-wrap: wrap; }
+  .player-tag { padding: 0.3rem 0.5rem; min-width: 80px; }
+  .player-tag .p-name { font-size: 0.5rem; }
+  .player-tag .p-chips { font-size: 0.7rem; }
+  .player-tag .p-action { font-size: 0.55rem; }
+  .player-tag .p-bet { font-size: 0.6rem; }
+
+  /* Bottom controls */
+  .hud-bottom {
+    padding: 0.6rem 0.8rem 0.8rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  .hud-bottom .player-info {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  .player-name { font-size: 0.6rem; }
+  .player-chips { font-size: 1.1rem; }
+  .player-avatar-mini { width: 28px; height: 28px; }
+
+  /* Betting controls - horizontal scroll on mobile */
+  .betting-controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.4rem;
+  }
+  .action-btn {
+    padding: 0.6rem 0.9rem;
+    font-size: 0.6rem;
+    min-height: 44px;
+    min-width: 60px;
+    flex: 0 1 auto;
+  }
+  .raise-group {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .raise-slider { width: 100px; height: 6px; }
+  .raise-slider::-webkit-slider-thumb { width: 24px; height: 24px; }
+  .raise-value { font-size: 0.7rem; min-width: 45px; }
+
+  /* Mini cards */
+  .mini-cards { bottom: auto; top: 110px; left: 10px; }
+  .mini-card { width: 32px; height: 46px; font-size: 0.6rem; }
+
+  /* HUD cards */
+  .hud-cards { bottom: auto; top: 130px; }
+  .hud-card { width: 50px; height: 72px; font-size: 1.1rem; }
+  .hud-card .card-rank { font-size: 1.2rem; }
+  .hud-card .card-suit { font-size: 0.9rem; }
+
+  /* Message display */
+  .hud-message { font-size: 1.1rem; }
+
+  /* -- ABILITIES PANEL -- */
+  .abilities-panel {
+    right: 5px;
+    top: auto;
+    bottom: 180px;
+    transform: none;
+  }
+  .abilities-toggle { font-size: 0.5rem; padding: 4px 10px; }
+  .abilities-grid {
+    grid-template-columns: repeat(4, 44px);
+    max-height: 200px;
+    gap: 3px;
+    padding: 4px;
+  }
+  .ability-btn { width: 42px; padding: 3px 1px; min-height: 44px; }
+  .ability-icon-wrap { width: 24px; height: 24px; font-size: 0.75rem; }
+  .ability-name { font-size: 0.38rem; }
+  .ability-cost { font-size: 0.32rem; }
+
+  /* -- CHAT BOX -- */
+  .chat-box {
+    bottom: auto;
+    top: 10px;
+    right: 10px;
+    width: 180px;
+    max-height: 150px;
+  }
+  .chat-messages { max-height: 100px; }
+  .chat-msg { font-size: 0.6rem; }
+
+  /* -- OVERLAYS -- */
+  .result-content h2 { font-size: 1.6rem; }
+  .result-content p { font-size: 0.9rem; }
+  #result-hands { gap: 0.5rem; }
+  .result-hand { padding: 0.3rem; }
+  .result-hand-name { font-size: 0.5rem; }
+
+  .elim-skull { font-size: 3.5rem; }
+  .elim-title { font-size: 2rem; }
+  .elim-name { font-size: 1rem; }
+
+  .ability-effect-content { font-size: 1.3rem; }
+
+  /* -- TUTORIAL -- */
+  .tutorial-content { width: 95%; max-height: 90vh; }
+  .tutorial-header h2 { font-size: 1.2rem; }
+  .tutorial-slide h3 { font-size: 1rem; }
+  .tutorial-slide p { font-size: 0.85rem; max-width: 90%; }
+  .tutorial-slide .tut-icon { font-size: 2rem; }
+  .tutorial-slide .tut-card { width: 40px; height: 58px; }
+  .tutorial-nav { flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin-top: 1rem; }
+  .tutorial-nav .neon-btn { min-width: 120px; font-size: 0.7rem; padding: 0.5rem 1rem; min-height: 40px; }
+
+  /* -- PEEK OVERLAY -- */
+  .peek-card { width: 65px; height: 95px; font-size: 1.5rem; }
+  .peek-content h3 { font-size: 1rem; }
+
+  /* -- ROULETTE -- */
+  #roulette-overlay { bottom: 200px; }
+  .roulette-text { font-size: 1rem; }
+  .roulette-subtitle { font-size: 0.7rem; }
+
+  /* -- COMMUNITY CARDS -- */
+  .community-card { width: 42px; height: 62px; }
+  .community-card .card-rank { font-size: 0.95rem; }
+  .community-card .card-suit { font-size: 0.8rem; }
+
+  /* -- STREAK -- */
+  .streak-value { font-size: 1rem; }
+  .streak-hot { font-size: 1.1rem; }
+  .streak-epic { font-size: 1.2rem; }
+  .streak-stats { font-size: 0.55rem; }
+
+  /* -- MUSIC PLAYER -- */
+  .music-player { bottom: 10px; left: 10px; }
+  .mp-toggle { width: 36px; height: 36px; font-size: 1.1rem; }
+  .mp-panel { width: 200px; bottom: 44px; padding: 10px; }
+  .mp-title { font-size: 0.6rem; }
+  .mp-now { font-size: 0.65rem; }
+  .mp-btn { width: 36px; height: 36px; font-size: 0.7rem; }
+  .mp-play { width: 42px; height: 42px; }
+  .mp-radio-btn { font-size: 0.55rem; padding: 5px 4px; min-height: 32px; }
+
+  /* -- SHOP -- */
+  .shop-layout { flex-direction: column; gap: 10px; max-height: 80vh; overflow-y: auto; }
+  .shop-preview-panel { flex: 0 0 auto; padding: 10px; }
+  #shop-preview-canvas { height: 160px; }
+  .shop-preview-name { font-size: 0.8rem; }
+  .shop-preview-desc { font-size: 0.6rem; }
+  .shop-preview-actions { flex-direction: column; gap: 6px; }
+  .shop-buy-btn { padding: 8px 16px; min-height: 44px; }
+  .shop-tabs { flex-wrap: wrap; gap: 3px; }
+  .shop-tab { font-size: 0.6rem; padding: 4px 8px; min-height: 32px; }
+  .shop-grid { grid-template-columns: repeat(2, 1fr); max-height: 250px; gap: 6px; }
+  .shop-item { padding: 8px 4px 6px; }
+  .shop-item-preview { width: 40px; height: 40px; font-size: 1.2rem; }
+  .shop-item-name { font-size: 0.55rem; }
+  .shop-item-price { font-size: 0.42rem; }
+}
+
+/* Extra small screens (phones in portrait < 400px) */
+@media (max-width: 400px) {
+  .menu-title h1 { font-size: 2rem; }
+  .subtitle { font-size: 0.7rem; letter-spacing: 0.3em; }
+  .pot-value { font-size: 1.1rem; }
+  .hud-players { gap: 0.3rem; }
+  .player-tag { min-width: 65px; padding: 0.2rem 0.4rem; }
+  .player-tag .p-name { font-size: 0.45rem; }
+  .player-tag .p-chips { font-size: 0.6rem; }
+  .action-btn { padding: 0.5rem 0.6rem; font-size: 0.55rem; min-width: 50px; }
+  .abilities-grid { grid-template-columns: repeat(3, 42px); }
+  .chat-box { width: 150px; }
+  .shop-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Landscape mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+  .menu-title h1 { font-size: 2.2rem; }
+  .menu-buttons { margin-top: 1rem; gap: 0.4rem; }
+  .neon-btn { padding: 0.5rem 1.5rem; font-size: 0.75rem; min-height: 38px; }
+  .menu-footer { margin-top: 0.5rem; font-size: 1rem; }
+  .hud-top { top: 5px; }
+  .pot-display { padding: 0.2rem 1rem; }
+  .pot-value { font-size: 1.1rem; }
+  .hud-players { top: 45px; }
+  .hud-bottom { padding: 0.4rem 0.8rem 0.5rem; }
+  .hud-cards { top: 80px; }
+  .mini-cards { top: 70px; }
+  .abilities-panel { bottom: 140px; }
+  .setup-options { gap: 0.6rem; }
+  .section-title { font-size: 1.2rem; margin-bottom: 0.8rem; }
 }

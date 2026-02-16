@@ -27,6 +27,12 @@ export class FPSCamera {
     this.mouseEnabled = true;
     this.mouseInfluence = 0.15;
 
+    // Touch interaction
+    this.isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    this.touchStart = { x: 0, y: 0 };
+    this.touchLook = { x: 0, y: 0 };
+    this.touchSensitivity = 0.4;
+
     this.setup();
   }
 
@@ -43,6 +49,39 @@ export class FPSCamera {
       this.targetLook.y = -ny * this.lookRange.y * this.mouseInfluence;
     };
     document.addEventListener('mousemove', this._onMouseMove);
+
+    // Touch listeners for mobile camera look
+    if (this.isMobile) {
+      const canvas = document.getElementById('game-canvas');
+      if (canvas) {
+        this._onTouchStart = (e) => {
+          if (e.touches.length === 1) {
+            this.touchStart.x = e.touches[0].clientX;
+            this.touchStart.y = e.touches[0].clientY;
+          }
+        };
+        this._onTouchMove = (e) => {
+          if (!this.mouseEnabled || e.touches.length !== 1) return;
+          const touch = e.touches[0];
+          const dx = (touch.clientX - this.touchStart.x) / window.innerWidth;
+          const dy = (touch.clientY - this.touchStart.y) / window.innerHeight;
+          this.touchLook.x = dx * this.touchSensitivity;
+          this.touchLook.y = dy * this.touchSensitivity;
+          const nx = (touch.clientX / window.innerWidth - 0.5) * 2;
+          const ny = (touch.clientY / window.innerHeight - 0.5) * 2;
+          this.targetLook.x = Math.max(-this.lookRange.x, Math.min(this.lookRange.x, nx * this.lookRange.x * this.touchSensitivity));
+          this.targetLook.y = Math.max(-this.lookRange.y, Math.min(this.lookRange.y, -ny * this.lookRange.y * this.touchSensitivity));
+        };
+        this._onTouchEnd = () => {
+          // Slowly return to center
+          this.targetLook.x *= 0.5;
+          this.targetLook.y *= 0.5;
+        };
+        canvas.addEventListener('touchstart', this._onTouchStart, { passive: true });
+        canvas.addEventListener('touchmove', this._onTouchMove, { passive: true });
+        canvas.addEventListener('touchend', this._onTouchEnd, { passive: true });
+      }
+    }
   }
 
   update(delta) {
@@ -75,6 +114,14 @@ export class FPSCamera {
   dispose() {
     if (this._onMouseMove) {
       document.removeEventListener('mousemove', this._onMouseMove);
+    }
+    if (this.isMobile) {
+      const canvas = document.getElementById('game-canvas');
+      if (canvas) {
+        if (this._onTouchStart) canvas.removeEventListener('touchstart', this._onTouchStart);
+        if (this._onTouchMove) canvas.removeEventListener('touchmove', this._onTouchMove);
+        if (this._onTouchEnd) canvas.removeEventListener('touchend', this._onTouchEnd);
+      }
     }
   }
 }
